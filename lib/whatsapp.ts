@@ -6,6 +6,9 @@
 // Never expose this module or its state to the browser.
 // =====================================================================
 
+// Prevent this module from ever being bundled for the browser
+import 'server-only';
+
 import path from 'path';
 import fs from 'fs';
 import type {
@@ -143,13 +146,16 @@ async function _doInit(): Promise<void> {
         keys: makeCacheableSignalKeyStore(authState.keys, logger),
       },
       logger,
-      browser: Browsers.ubuntu('Chrome'),
-      connectTimeoutMs: 30_000,
+      browser: Browsers.macOS('Safari'),
+      connectTimeoutMs: 60_000,
       keepAliveIntervalMs: 25_000,
-      retryRequestDelayMs: 250,
+      retryRequestDelayMs: 500,
       generateHighQualityLinkPreview: false,
       shouldIgnoreJid: () => true, // don't process any messages
       markOnlineOnConnect: false,
+      syncFullHistory: false,
+      // Suppress Baileys message-history requests
+      getMessage: async () => undefined,
     });
 
     state.socket = sock;
