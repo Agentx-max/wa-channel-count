@@ -27,11 +27,13 @@ export interface WaConnectionState {
   reconnectAttempts: number;
 }
 
-// Global singleton – survives Next.js hot reloads
+// Global singleton – survives Next.js hot reloads AND module re-imports on cloud
 /* eslint-disable no-var */
 declare global {
   var __waState: WaConnectionState | undefined;
   var __waInitialised: boolean | undefined;
+  var __waInitPromise: Promise<void> | null;
+  var __waInitStartedAt: number | null;
 }
 /* eslint-enable no-var */
 
@@ -57,28 +59,45 @@ function getState(): WaConnectionState {
 // Initialise
 // ---------------------------------------------------------------------------
 
-let initPromise: Promise<void> | null = null;
+// Use global so the promise survives module re-imports on cloud workers
+if (global.__waInitPromise === undefined) global.__waInitPromise = null;
+if (global.__waInitStartedAt === undefined) global.__waInitStartedAt = null;
 
 export async function initWhatsApp(): Promise<void> {
-  // Return ongoing init if already in progress
-  if (initPromise) return initPromise;
-
   const state = getState();
 
-  // Already connected
+  // Already connected — nothing to do
   if (state.isConnected && state.socket) return;
 
-  initPromise = _doInit().finally(() => {
-    initPromise = null;
+  // If stuck connecting for more than 90s, force a reset
+  if (
+    state.isConnecting &&
+    global.__waInitStartedAt &&
+    Date.now() - global.__waInitStartedAt > 90_000
+  ) {
+    console.log('[WA] Init stuck for >90s — resetting state and retrying');
+    state.isConnecting = false;
+    state.socket = null;
+    global.__waInitPromise = null;
+    global.__waInitStartedAt = null;
+  }
+
+  // Return ongoing init if already in progress
+  if (global.__waInitPromise) return global.__waInitPromise;
+
+  global.__waInitStartedAt = Date.now();
+  global.__waInitPromise = _doInit().finally(() => {
+    global.__waInitPromise = null;
+    global.__waInitStartedAt = null;
   });
 
-  return initPromise;
+  return global.__waInitPromise;
 }
 
 async function _doInit(): Promise<void> {
   const state = getState();
 
-  if (state.isConnecting) return;
+  // Guard handled by initWhatsApp — just mark connecting
   state.isConnecting = true;
   state.qrCode = null;
 

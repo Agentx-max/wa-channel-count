@@ -6,6 +6,7 @@ import type { ConnectionStatus } from '@/lib/types';
 
 export default function SetupPage() {
   const [status, setStatus] = useState<ConnectionStatus | null>(null);
+  const [initAge, setInitAge] = useState<number | null>(null);
   const [polling, setPolling] = useState(true);
   const [reconnecting, setReconnecting] = useState(false);
   const [activeTab, setActiveTab] = useState<'qr' | 'pairing'>('qr');
@@ -24,6 +25,7 @@ export default function SetupPage() {
 
         if (data.status) {
           setStatus(data.status as ConnectionStatus);
+          setInitAge(typeof data.initAge === 'number' ? data.initAge : null);
           setErrorMessage(null);
 
           // Stop polling once connected
@@ -371,7 +373,7 @@ export default function SetupPage() {
                     </button>
                   </div>
                 ) : (
-                  <div style={{ padding: '32px 16px', color: 'var(--text-muted)' }}>
+                  <div style={{ padding: '32px 16px', color: 'var(--text-muted)', textAlign: 'center' }}>
                     <svg
                       width="26"
                       height="26"
@@ -379,15 +381,22 @@ export default function SetupPage() {
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
-                      style={{ animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }}
+                      style={{ animation: 'spin 0.8s linear infinite', margin: '0 auto 16px', display: 'block' }}
                     >
                       <path d="M21 12a9 9 0 11-6.219-8.56" />
                     </svg>
                     <p style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '8px' }}>
                       Initializing WhatsApp Socket…
                     </p>
+                    {initAge !== null && (
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                        ⏱ Connecting for {initAge}s…
+                      </p>
+                    )}
                     <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-                      Generating new session QR code. If it takes a moment, click below.
+                      {initAge !== null && initAge > 20
+                        ? '⚠️ Taking longer than usual. Try the Phone Pairing Code tab instead!'
+                        : 'Generating new session QR code. If it takes a moment, click below.'}
                     </p>
                     <button
                       onClick={handleReconnect}
