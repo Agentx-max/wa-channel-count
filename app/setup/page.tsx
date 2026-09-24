@@ -126,7 +126,7 @@ export default function SetupPage() {
 
         {/* Loading state */}
         {status === null && (
-          <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+          <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
             <svg
               width="24"
               height="24"
@@ -138,7 +138,23 @@ export default function SetupPage() {
             >
               <path d="M21 12a9 9 0 11-6.219-8.56" />
             </svg>
-            <p>Checking connection status…</p>
+            <p style={{ marginBottom: '16px' }}>Connecting to WhatsApp server…</p>
+            <button
+              onClick={handleReconnect}
+              disabled={reconnecting}
+              style={{
+                background: 'rgba(37,211,102,0.15)',
+                color: 'var(--green)',
+                border: '1px solid rgba(37,211,102,0.3)',
+                padding: '8px 16px',
+                borderRadius: '10px',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+              }}
+            >
+              {reconnecting ? 'Initializing...' : 'Generate QR Code Now'}
+            </button>
           </div>
         )}
 

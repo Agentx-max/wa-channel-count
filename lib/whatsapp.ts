@@ -103,7 +103,19 @@ async function _doInit(): Promise<void> {
 
     // eslint-disable-next-line react-hooks/rules-of-hooks -- useMultiFileAuthState is a Baileys utility, not a React hook
     const { state: authState, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
-    const { version } = await fetchLatestBaileysVersion();
+
+    let version: [number, number, number] = [2, 3000, 1015901307];
+    try {
+      const v = await Promise.race([
+        fetchLatestBaileysVersion(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Version fetch timeout')), 3000),
+        ),
+      ]);
+      version = v.version;
+    } catch {
+      console.log('[WA] Using default Baileys version fallback');
+    }
 
     const sock = makeWASocket({
       version,
