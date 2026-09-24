@@ -125,7 +125,6 @@ async function _doInit(): Promise<void> {
       },
       logger,
       browser: Browsers.ubuntu('Chrome'),
-      printQRInTerminal: true,
       connectTimeoutMs: 30_000,
       keepAliveIntervalMs: 25_000,
       retryRequestDelayMs: 250,
@@ -299,6 +298,27 @@ export async function fetchNewsletterByInvite(
 
     throw new Error(`WA_BAILEYS_ERROR: ${message}`);
   }
+}
+
+/**
+ * Request an 8-digit pairing code from WhatsApp using a phone number.
+ */
+export async function getPairingCode(phoneNumber: string): Promise<string> {
+  let sock = getSocket();
+  if (!sock) {
+    await initWhatsApp();
+    sock = getSocket();
+  }
+  if (!sock) {
+    throw new Error('FAILED_TO_INIT_SOCKET');
+  }
+
+  const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+  if (!cleanPhone || cleanPhone.length < 8) {
+    throw new Error('Please enter a valid phone number with country code (e.g. 1234567890)');
+  }
+
+  return await sock.requestPairingCode(cleanPhone);
 }
 
 // ---------------------------------------------------------------------------
