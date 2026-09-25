@@ -46,15 +46,16 @@ export default function ChannelCard() {
     <div
       id="channel-card"
       style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border)',
+        background: 'rgba(15, 18, 26, 0.85)',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
         borderRadius: '24px',
-        padding: 'clamp(24px, 5vw, 40px)',
+        padding: 'clamp(20px, 5vw, 36px)',
         width: '100%',
-        maxWidth: channel ? '620px' : '520px',
-        backdropFilter: 'blur(10px)',
-        boxShadow: '0 0 0 1px rgba(255,255,255,0.02), 0 24px 60px rgba(0,0,0,0.5)',
-        transition: 'all 0.3s ease',
+        maxWidth: channel ? '640px' : '520px',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        boxShadow: '0 0 0 1px rgba(255,255,255,0.03), 0 24px 64px rgba(0,0,0,0.65)',
+        transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
       }}
     >
       {channel ? (
