@@ -31,8 +31,7 @@ export default function ChannelInput({ onSubmit, isLoading }: ChannelInputProps)
   }
 
   const SAMPLE_CHANNELS = [
-    { name: 'WhatsApp', url: 'https://whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M' },
-    { name: 'Netflix', url: 'https://whatsapp.com/channel/0029Va123456789' },
+    { name: 'WhatsApp Channel', url: 'https://whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M' },
   ];
 
   return (
