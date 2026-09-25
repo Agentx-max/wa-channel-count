@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import ChannelCard from '@/components/ChannelCard';
+import RecommendedChannels from '@/components/RecommendedChannels';
 
 export default function Home() {
   return (
@@ -119,6 +120,9 @@ export default function Home() {
 
         {/* Main card */}
         <ChannelCard />
+
+        {/* Recommended Channels */}
+        <RecommendedChannels />
       </div>
 
       {/* Professional Footer */}
