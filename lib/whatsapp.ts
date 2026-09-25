@@ -143,6 +143,16 @@ async function restoreAuthFromEnv() {
 async function _doInit(): Promise<void> {
   const state = getState();
 
+  // Close existing socket before opening a new one to prevent 440 Conflict errors
+  if (state.socket) {
+    try {
+      state.socket.end(undefined);
+    } catch {
+      // ignore
+    }
+    state.socket = null;
+  }
+
   // Guard handled by initWhatsApp — just mark connecting
   state.isConnecting = true;
   state.qrCode = null;
@@ -401,12 +411,27 @@ export async function fetchNewsletterByInvite(
 export async function getPairingCode(phoneNumber: string): Promise<string> {
   const state = getState();
   if (state.isConnected) {
-    throw new Error('WhatsApp is already connected! Refresh the page.');
+    throw new Error('WhatsApp engine is ALREADY connected! Refresh the page to copy your cloud deployment code.');
+  }
+
+  // Check if creds.json is already registered
+  const credsPath = path.join(AUTH_DIR, 'creds.json');
+  if (fs.existsSync(credsPath)) {
+    try {
+      const creds = JSON.parse(fs.readFileSync(credsPath, 'utf-8'));
+      if (creds.registered || creds.me?.id) {
+        state.isConnected = true;
+        throw new Error('WhatsApp is ALREADY linked on this server! Refresh /setup to export your cloud code.');
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes('ALREADY linked')) throw e;
+    }
   }
 
   const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
   if (!cleanPhone || cleanPhone.length < 8) {
-    throw new Error('Please enter a valid phone number with country code (e.g. 94712345678 or 1234567890)');
+    throw new Error('Please enter a valid phone number with country code (e.g. 94770153179)');
   }
 
   let sock = getSocket();
