@@ -202,12 +202,11 @@ async function _doInit(): Promise<void> {
         keys: makeCacheableSignalKeyStore(authState.keys, logger),
       },
       logger,
-      browser: Browsers.macOS('Safari'),
+      browser: Browsers.ubuntu('Chrome'),
       connectTimeoutMs: 60_000,
       keepAliveIntervalMs: 25_000,
       retryRequestDelayMs: 500,
       generateHighQualityLinkPreview: false,
-      shouldIgnoreJid: () => true, // don't process any messages
       markOnlineOnConnect: false,
       syncFullHistory: false,
       // Suppress Baileys message-history requests
