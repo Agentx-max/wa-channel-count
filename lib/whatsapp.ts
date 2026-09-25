@@ -244,7 +244,9 @@ async function _doInit(): Promise<void> {
 
         console.log(`[WA] Connection closed. Status code: ${statusCode}, Error:`, error?.message || error);
 
-        const loggedOut = statusCode === DisconnectReason.loggedOut;
+        // Only treat 401 as permanent logout if the user was already registered/logged in
+        const isRegisteredUser = Boolean(authState.creds.registered || authState.creds.me?.id);
+        const loggedOut = statusCode === DisconnectReason.loggedOut && isRegisteredUser;
 
         if (loggedOut) {
           console.log('[WA] Session logged out by WhatsApp (401) — clearing auth');
@@ -278,7 +280,7 @@ async function _doInit(): Promise<void> {
           console.error(
             '[WA] Max reconnect attempts reached (5/5). Call initWhatsApp() again to retry.',
           );
-          // Reset reconnectAttempts counter so future user actions (like clicking Retry) can try again
+          // Reset reconnectAttempts counter so future user actions can try again
           state.reconnectAttempts = 0;
         }
       }
@@ -287,6 +289,9 @@ async function _doInit(): Promise<void> {
     // ── Save credentials when they change ─────────────────────────────────
     sock.ev.on('creds.update', async (creds) => {
       console.log('[WA] Credentials updated & saved to auth/');
+      if (!fs.existsSync(AUTH_DIR)) {
+        fs.mkdirSync(AUTH_DIR, { recursive: true });
+      }
       await saveCreds();
     });
 
