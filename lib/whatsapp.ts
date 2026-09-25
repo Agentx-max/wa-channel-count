@@ -206,7 +206,7 @@ async function _doInit(): Promise<void> {
 
     state.socket = sock;
 
-    // ── QR code ────────────────────────────────────────────────────────────
+    // ── QR code & Connection Updates ───────────────────────────────────────
     sock.ev.on('connection.update', async (update: Partial<ConnectionState>) => {
       const { connection, lastDisconnect, qr } = update;
 
@@ -228,7 +228,7 @@ async function _doInit(): Promise<void> {
         state.qrCode = null;
         state.isLoggedOut = false;
         state.reconnectAttempts = 0;
-        console.log('[WA] Connected ✓');
+        console.log('[WA] Connected successfully! ✓ Session active.');
       }
 
       if (connection === 'close') {
@@ -236,15 +236,18 @@ async function _doInit(): Promise<void> {
         state.isConnecting = false;
 
         const { Boom } = await import('@hapi/boom');
-        const reason =
-          lastDisconnect?.error instanceof Boom
-            ? lastDisconnect.error.output.statusCode
-            : 0;
+        const error = lastDisconnect?.error;
+        const statusCode =
+          error instanceof Boom
+            ? error.output.statusCode
+            : (error as any)?.output?.statusCode || 0;
 
-        const loggedOut = reason === DisconnectReason.loggedOut;
+        console.log(`[WA] Connection closed. Status code: ${statusCode}, Error:`, error?.message || error);
+
+        const loggedOut = statusCode === DisconnectReason.loggedOut;
 
         if (loggedOut) {
-          console.log('[WA] Session logged out by WhatsApp — clearing auth and will generate fresh QR');
+          console.log('[WA] Session logged out by WhatsApp (401) — clearing auth');
           state.isLoggedOut = true;
           state.isConnected = false;
           state.isConnecting = false;
@@ -256,7 +259,7 @@ async function _doInit(): Promise<void> {
           // Auto-delete stale credentials
           if (fs.existsSync(AUTH_DIR)) {
             fs.rmSync(AUTH_DIR, { recursive: true, force: true });
-            console.log('[WA] Deleted stale auth/ — visit /setup and click Generate QR');
+            console.log('[WA] Deleted stale auth/ folder');
           }
           return;
         }
@@ -266,21 +269,26 @@ async function _doInit(): Promise<void> {
           state.reconnectAttempts += 1;
           const delay = RECONNECT_DELAY_MS * state.reconnectAttempts;
           console.log(
-            `[WA] Connection closed (reason ${reason}). Reconnecting in ${delay}ms… (attempt ${state.reconnectAttempts})`,
+            `[WA] Reconnecting in ${delay}ms… (attempt ${state.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`,
           );
           setTimeout(() => {
             void _doInit();
           }, delay);
         } else {
           console.error(
-            '[WA] Max reconnect attempts reached. Please restart the server.',
+            '[WA] Max reconnect attempts reached (5/5). Call initWhatsApp() again to retry.',
           );
+          // Reset reconnectAttempts counter so future user actions (like clicking Retry) can try again
+          state.reconnectAttempts = 0;
         }
       }
     });
 
     // ── Save credentials when they change ─────────────────────────────────
-    sock.ev.on('creds.update', saveCreds);
+    sock.ev.on('creds.update', async (creds) => {
+      console.log('[WA] Credentials updated & saved to auth/');
+      await saveCreds();
+    });
 
     state.isConnecting = false;
   } catch (err) {
@@ -386,8 +394,19 @@ export async function fetchNewsletterByInvite(
  * Request an 8-digit pairing code from WhatsApp using a phone number.
  */
 export async function getPairingCode(phoneNumber: string): Promise<string> {
+  const state = getState();
+  if (state.isConnected) {
+    throw new Error('WhatsApp is already connected! Refresh the page.');
+  }
+
+  const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+  if (!cleanPhone || cleanPhone.length < 8) {
+    throw new Error('Please enter a valid phone number with country code (e.g. 94712345678 or 1234567890)');
+  }
+
   let sock = getSocket();
-  if (!sock) {
+  if (!sock || state.isLoggedOut) {
+    state.isLoggedOut = false;
     await initWhatsApp();
     sock = getSocket();
   }
@@ -395,12 +414,10 @@ export async function getPairingCode(phoneNumber: string): Promise<string> {
     throw new Error('FAILED_TO_INIT_SOCKET');
   }
 
-  const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
-  if (!cleanPhone || cleanPhone.length < 8) {
-    throw new Error('Please enter a valid phone number with country code (e.g. 1234567890)');
-  }
-
-  return await sock.requestPairingCode(cleanPhone);
+  console.log(`[WA] Requesting 8-digit pairing code for number: ${cleanPhone}`);
+  const code = await sock.requestPairingCode(cleanPhone);
+  console.log(`[WA] Pairing code issued successfully: ${code}`);
+  return code;
 }
 
 // ---------------------------------------------------------------------------
