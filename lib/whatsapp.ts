@@ -72,6 +72,23 @@ export async function initWhatsApp(): Promise<void> {
   // Already connected — nothing to do
   if (state.isConnected && state.socket) return;
 
+  // If logged out, reset first so we can get a fresh QR
+  if (state.isLoggedOut) {
+    console.log('[WA] Previously logged out — resetting for fresh auth');
+    state.isLoggedOut = false;
+    state.isConnecting = false;
+    state.socket = null;
+    state.qrCode = null;
+    state.reconnectAttempts = 0;
+    global.__waInitPromise = null;
+    global.__waInitStartedAt = null;
+    // Wipe stale credentials so WhatsApp shows a fresh QR
+    if (fs.existsSync(AUTH_DIR)) {
+      fs.rmSync(AUTH_DIR, { recursive: true, force: true });
+      console.log('[WA] Deleted stale auth/ folder');
+    }
+  }
+
   // If stuck connecting for more than 90s, force a reset
   if (
     state.isConnecting &&
@@ -227,9 +244,20 @@ async function _doInit(): Promise<void> {
         const loggedOut = reason === DisconnectReason.loggedOut;
 
         if (loggedOut) {
+          console.log('[WA] Session logged out by WhatsApp — clearing auth and will generate fresh QR');
           state.isLoggedOut = true;
+          state.isConnected = false;
+          state.isConnecting = false;
+          state.qrCode = null;
           state.socket = null;
-          console.log('[WA] Logged out. Delete ./auth and restart to re-authenticate.');
+          global.__waInitPromise = null;
+          global.__waInitStartedAt = null;
+
+          // Auto-delete stale credentials
+          if (fs.existsSync(AUTH_DIR)) {
+            fs.rmSync(AUTH_DIR, { recursive: true, force: true });
+            console.log('[WA] Deleted stale auth/ — visit /setup and click Generate QR');
+          }
           return;
         }
 
