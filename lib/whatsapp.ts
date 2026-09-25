@@ -66,11 +66,16 @@ function getState(): WaConnectionState {
 if (global.__waInitPromise === undefined) global.__waInitPromise = null;
 if (global.__waInitStartedAt === undefined) global.__waInitStartedAt = null;
 
-export async function initWhatsApp(): Promise<void> {
+export async function initWhatsApp(force = false): Promise<void> {
   const state = getState();
 
   // Already connected — nothing to do
   if (state.isConnected && state.socket) return;
+
+  // If socket is already alive and waiting for authentication/pairing, DO NOT DESTROY IT!
+  if (!force && state.socket && !state.isLoggedOut) {
+    return;
+  }
 
   // If logged out, reset first so we can get a fresh QR
   if (state.isLoggedOut) {
@@ -459,7 +464,7 @@ export async function getPairingCode(phoneNumber: string): Promise<string> {
     await resetAuthSession();
   }
 
-  await initWhatsApp();
+  await initWhatsApp(true);
 
   // Wait up to 8 seconds for the Baileys socket to instantiate
   let sock = getSocket();
