@@ -453,19 +453,55 @@ export async function getPairingCode(phoneNumber: string): Promise<string> {
     throw new Error('Please enter a valid phone number with country code (e.g. 94770153179)');
   }
 
-  // Force clean wipe of previous session so old keys don't break new phone pairing
-  await resetAuthSession();
+  const state = getState();
+
+  // If previous session exists or socket is in bad state, reset cleanly first
+  if (state.socket || fs.existsSync(AUTH_DIR)) {
+    await resetAuthSession();
+  }
+
   await initWhatsApp();
 
-  const sock = getSocket();
+  // Wait up to 8 seconds for the Baileys socket to instantiate
+  let sock = getSocket();
+  const startTime = Date.now();
+  while (Date.now() - startTime < 8000) {
+    sock = getSocket();
+    if (sock) {
+      // Pause 1.5s for WebSocket handshake to stabilize
+      await new Promise((r) => setTimeout(r, 1500));
+      break;
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+
   if (!sock) {
-    throw new Error('FAILED_TO_INIT_SOCKET');
+    throw new Error('Failed to initialize WhatsApp connection. Please click Reset Session and try again.');
   }
 
   console.log(`[WA] Requesting 8-digit pairing code for number: ${cleanPhone}`);
-  const code = await sock.requestPairingCode(cleanPhone);
-  console.log(`[WA] Pairing code issued successfully: ${code}`);
-  return code;
+
+  // Retry pairing code request up to 3 attempts (1.5s-2s delay) in case WS was still opening
+  let lastError: unknown = null;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const currentSock = getSocket();
+      if (!currentSock) throw new Error('Socket unavailable');
+      const code = await currentSock.requestPairingCode(cleanPhone);
+      if (code) {
+        console.log(`[WA] Pairing code issued successfully on attempt ${attempt}: ${code}`);
+        return code;
+      }
+    } catch (err: unknown) {
+      lastError = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      console.log(`[WA] Pairing code attempt ${attempt}/3 failed (${msg}). Retrying in 2s...`);
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
+
+  const errMsg = lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(`WhatsApp pairing failed (${errMsg}). Please click Reset Session and try again.`);
 }
 
 // ---------------------------------------------------------------------------
