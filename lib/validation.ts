@@ -23,6 +23,11 @@ export function extractChannelCode(url: string): string | null {
     }
   }
 
+  // Accept direct invite code if formatted correctly (e.g. 0029VajWJmkAInPnfgGtrS2K)
+  if (/^[A-Za-z0-9_-]{10,64}$/.test(trimmed)) {
+    return trimmed;
+  }
+
   return null;
 }
 

@@ -30,7 +30,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
   }
 
   // ── Extract and validate URL ────────────────────────────────────────────
-  const rawUrl = request.nextUrl.searchParams.get('url') ?? '';
+  const rawUrl = request.nextUrl.searchParams.get('url') ?? request.nextUrl.searchParams.get('code') ?? '';
   const { valid, code, error: validationError } = validateChannelUrl(rawUrl);
 
   if (!valid || !code) {
