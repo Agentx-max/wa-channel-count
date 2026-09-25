@@ -80,6 +80,34 @@ button:active {
   transform: scale(0.98);
 }
 
+/* Animations */
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.22); }
+}
+
+@keyframes floatOrb {
+  0%, 100% { transform: translateY(0px) scale(1); opacity: 0.45; }
+  50% { transform: translateY(-30px) scale(1.12); opacity: 0.75; }
+}
+
+@keyframes cardEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Ensure Odometer digits have zero solid box background */
+.digit-col, .digit-span {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
 /* Responsive utilities */
 @media (max-width: 480px) {
   .mobile-hide {

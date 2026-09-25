@@ -649,6 +649,37 @@ export default function SetupPage() {
         )}
       </div>
 
+      {/* Professional Footer */}
+      <footer
+        style={{
+          marginTop: '32px',
+          textAlign: 'center',
+          fontSize: '13px',
+          fontWeight: '500',
+          color: 'var(--text-muted)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px',
+        }}
+      >
+        <span>Made with</span>
+        <span
+          style={{
+            color: '#ff4d4d',
+            display: 'inline-block',
+            animation: 'heartbeat 1.5s ease-in-out infinite',
+            fontSize: '14px',
+          }}
+        >
+          ❤️
+        </span>
+        <span>by</span>
+        <span style={{ color: 'var(--green)', fontWeight: '700', letterSpacing: '0.02em' }}>
+          Agent X &amp; TechKey Team
+        </span>
+      </footer>
+
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }

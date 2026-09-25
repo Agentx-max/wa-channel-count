@@ -13,6 +13,7 @@ const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 function DigitColumn({ digit }: { digit: number }) {
   return (
     <span
+      className="digit-col"
       style={{
         display: 'inline-block',
         height: '1em',
@@ -22,9 +23,12 @@ function DigitColumn({ digit }: { digit: number }) {
         verticalAlign: 'top',
         width: '0.62em',
         textAlign: 'center',
+        background: 'transparent',
+        backgroundColor: 'transparent',
       }}
     >
       <span
+        className="digit-span"
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -35,6 +39,8 @@ function DigitColumn({ digit }: { digit: number }) {
           transform: `translateY(-${digit * 10}%)`,
           transition: 'transform 0.6s cubic-bezier(0.23, 1, 0.32, 1)',
           willChange: 'transform',
+          background: 'transparent',
+          backgroundColor: 'transparent',
         }}
       >
         {DIGITS.map((d) => (
@@ -47,6 +53,8 @@ function DigitColumn({ digit }: { digit: number }) {
               alignItems: 'center',
               justifyContent: 'center',
               color: 'var(--text-primary)',
+              background: 'transparent',
+              backgroundColor: 'transparent',
             }}
           >
             {d}
