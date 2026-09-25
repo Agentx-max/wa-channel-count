@@ -97,12 +97,41 @@ export async function initWhatsApp(): Promise<void> {
   return global.__waInitPromise;
 }
 
+async function restoreAuthFromEnv() {
+  const backup = process.env.WA_AUTH_BACKUP;
+  if (!backup) return;
+
+  try {
+    const data = JSON.parse(Buffer.from(backup, 'base64').toString('utf-8')) as Record<string, unknown>;
+
+    if (!fs.existsSync(AUTH_DIR)) {
+      fs.mkdirSync(AUTH_DIR, { recursive: true });
+    }
+
+    // Write each file from the backup to the auth directory
+    for (const [filename, content] of Object.entries(data)) {
+      const filepath = path.join(AUTH_DIR, filename);
+      fs.writeFileSync(
+        filepath,
+        typeof content === 'string' ? content : JSON.stringify(content),
+        'utf-8',
+      );
+    }
+    console.log(`[WA] Auth restored from WA_AUTH_BACKUP (${Object.keys(data).length} files)`);
+  } catch (err) {
+    console.error('[WA] Failed to restore auth from WA_AUTH_BACKUP env var:', err);
+  }
+}
+
 async function _doInit(): Promise<void> {
   const state = getState();
 
   // Guard handled by initWhatsApp — just mark connecting
   state.isConnecting = true;
   state.qrCode = null;
+
+  // Restore credentials from environment variable (for cloud deployments)
+  await restoreAuthFromEnv();
 
   // Ensure auth directory exists
   if (!fs.existsSync(AUTH_DIR)) {

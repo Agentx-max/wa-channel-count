@@ -14,6 +14,9 @@ export default function SetupPage() {
   const [pairingCode, setPairingCode] = useState<string | null>(null);
   const [pairingLoading, setPairingLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [exportBackup, setExportBackup] = useState<string | null>(null);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval>;
@@ -68,7 +71,33 @@ export default function SetupPage() {
     }
   }
 
+  async function handleExport() {
+    setExportLoading(true);
+    try {
+      const res = await fetch('/api/auth/export', { cache: 'no-store' });
+      const data = await res.json();
+      if (data.ok && data.backup) {
+        setExportBackup(data.backup);
+      } else {
+        setErrorMessage(data.error || 'Export failed.');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setErrorMessage(`Export failed: ${msg}`);
+    } finally {
+      setExportLoading(false);
+    }
+  }
+
+  async function handleCopy() {
+    if (!exportBackup) return;
+    await navigator.clipboard.writeText(exportBackup);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  }
+
   async function handleRequestPairing(e: React.FormEvent) {
+
     e.preventDefault();
     if (!phoneNumber.trim()) return;
 
@@ -264,6 +293,113 @@ export default function SetupPage() {
             >
               Go to Live Counter →
             </Link>
+
+            {/* Deploy to Cloud Panel */}
+            <div
+              style={{
+                marginTop: '24px',
+                padding: '20px',
+                background: 'rgba(99,102,241,0.08)',
+                border: '1px solid rgba(99,102,241,0.25)',
+                borderRadius: '14px',
+                textAlign: 'left',
+              }}
+            >
+              <p style={{ fontSize: '13px', fontWeight: '700', color: '#a5b4fc', marginBottom: '6px' }}>
+                ☁️ Deploy to Render / Cloud?
+              </p>
+              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '14px', lineHeight: '1.6' }}>
+                Cloud servers can&apos;t show QR codes (WhatsApp blocks data-center IPs).
+                Export your local session and paste it as an env var on Render instead.
+              </p>
+
+              {!exportBackup ? (
+                <button
+                  onClick={handleExport}
+                  disabled={exportLoading}
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    background: 'rgba(99,102,241,0.2)',
+                    color: '#a5b4fc',
+                    border: '1px solid rgba(99,102,241,0.4)',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: exportLoading ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {exportLoading ? 'Exporting…' : '📤 Export Session for Cloud'}
+                </button>
+              ) : (
+                <div>
+                  <p style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                    STEP 1 — Copy this value:
+                  </p>
+                  <div style={{ position: 'relative', marginBottom: '14px' }}>
+                    <textarea
+                      readOnly
+                      value={exportBackup}
+                      rows={3}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        background: 'rgba(0,0,0,0.4)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '8px',
+                        color: 'var(--text-secondary)',
+                        fontSize: '10px',
+                        fontFamily: 'monospace',
+                        resize: 'none',
+                        boxSizing: 'border-box',
+                        lineBreak: 'anywhere',
+                      }}
+                    />
+                    <button
+                      onClick={handleCopy}
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        padding: '4px 10px',
+                        background: copied ? 'rgba(37,211,102,0.2)' : 'rgba(99,102,241,0.3)',
+                        color: copied ? 'var(--green)' : '#a5b4fc',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {copied ? '✓ Copied!' : 'Copy'}
+                    </button>
+                  </div>
+
+                  <p style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                    STEP 2 — On Render, go to your service → Environment:
+                  </p>
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      background: 'rgba(0,0,0,0.3)',
+                      borderRadius: '8px',
+                      fontFamily: 'monospace',
+                      fontSize: '12px',
+                      color: '#a5b4fc',
+                      marginBottom: '10px',
+                    }}
+                  >
+                    Key: <strong>WA_AUTH_BACKUP</strong><br />
+                    Value: <em style={{ color: 'var(--text-muted)' }}>(paste what you copied)</em>
+                  </div>
+
+                  <p style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: '1.6' }}>
+                    STEP 3 — Click <strong>Save Changes</strong> on Render → it will redeploy automatically.
+                    Your session will be restored and the app will work without any QR scan! ✨
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div>
