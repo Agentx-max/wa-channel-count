@@ -347,8 +347,23 @@ const CACHE_TTL_MS = 3000; // 3 seconds cache
 export async function fetchNewsletterByInvite(
   inviteCode: string,
 ): Promise<NewsletterMetadata> {
-  const sock = getSocket();
-  const status = getConnectionStatus();
+  let sock = getSocket();
+  let status = getConnectionStatus();
+
+  // If not connected, trigger init and wait up to 10s for connection to establish
+  if (!sock || !status.connected) {
+    console.log('[WA] Channel lookup requested while socket not connected. Initialising & waiting…');
+    void initWhatsApp().catch((err) => console.error('[WA] Lookup init error:', err));
+
+    const start = Date.now();
+    while (Date.now() - start < 10_000) {
+      status = getConnectionStatus();
+      sock = getSocket();
+      if (status.connected && sock) break;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    }
+  }
+
   if (!sock || !status.connected) {
     throw new Error('WA_NOT_CONNECTED');
   }
