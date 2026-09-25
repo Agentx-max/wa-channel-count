@@ -126,6 +126,38 @@ export default function SetupPage() {
     }
   }
 
+  async function handleResetSession() {
+    setReconnecting(true);
+    setErrorMessage(null);
+    setPairingCode(null);
+    setExportBackup(null);
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reset' }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setStatus({
+          connected: false,
+          qrAvailable: false,
+          loggedOut: false,
+          reconnecting: true,
+        });
+        setPolling(true);
+        setActiveTab('pairing');
+      } else {
+        setErrorMessage(data.error || 'Failed to reset session.');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setErrorMessage(`Reset failed: ${msg}`);
+    } finally {
+      setReconnecting(false);
+    }
+  }
+
   const cardStyle: React.CSSProperties = {
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
@@ -275,24 +307,45 @@ export default function SetupPage() {
             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
               WhatsApp session is active. Public visitors can now look up any channel.
             </p>
-            <Link
-              href="/"
-              style={{
-                display: 'inline-block',
-                padding: '10px 24px',
-                background: 'var(--green)',
-                color: '#000',
-                borderRadius: '10px',
-                textDecoration: 'none',
-                fontSize: '14px',
-                fontWeight: '700',
-                transition: 'opacity 0.2s',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.85')}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
-            >
-              Go to Live Counter →
-            </Link>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center' }}>
+              <Link
+                href="/"
+                style={{
+                  display: 'inline-block',
+                  width: '100%',
+                  padding: '10px 24px',
+                  background: 'var(--green)',
+                  color: '#000',
+                  borderRadius: '10px',
+                  textDecoration: 'none',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  transition: 'opacity 0.2s',
+                  boxSizing: 'border-box',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.85')}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
+              >
+                Go to Live Counter →
+              </Link>
+              <button
+                onClick={handleResetSession}
+                disabled={reconnecting}
+                style={{
+                  background: 'rgba(255,68,68,0.1)',
+                  border: '1px solid rgba(255,68,68,0.25)',
+                  color: '#ff6b6b',
+                  padding: '8px 16px',
+                  borderRadius: '10px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  width: '100%',
+                }}
+              >
+                {reconnecting ? 'Resetting session…' : '🔄 Unlink / Change WhatsApp Number'}
+              </button>
+            </div>
 
             {/* Deploy to Cloud Panel */}
             <div
@@ -605,6 +658,24 @@ export default function SetupPage() {
                     {pairingLoading ? 'Requesting Code…' : 'Get 8-Digit Pairing Code'}
                   </button>
                 </form>
+
+                <div style={{ marginTop: '14px', textAlign: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={handleResetSession}
+                    disabled={reconnecting}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      fontSize: '12px',
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {reconnecting ? 'Wiping session data…' : '⚠️ Stuck or changing number? Click here to Reset Session'}
+                  </button>
+                </div>
 
                 {pairingCode && (
                   <div

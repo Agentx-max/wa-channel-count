@@ -420,41 +420,44 @@ export async function fetchNewsletterByInvite(
   }
 }
 
+export async function resetAuthSession(): Promise<void> {
+  const state = getState();
+  if (state.socket) {
+    try {
+      state.socket.end(undefined);
+    } catch {
+      // ignore
+    }
+    state.socket = null;
+  }
+  state.isConnected = false;
+  state.isConnecting = false;
+  state.qrCode = null;
+  state.isLoggedOut = false;
+  state.reconnectAttempts = 0;
+  global.__waInitPromise = null;
+  global.__waInitStartedAt = null;
+
+  if (fs.existsSync(AUTH_DIR)) {
+    fs.rmSync(AUTH_DIR, { recursive: true, force: true });
+    console.log('[WA] Force deleted auth/ folder for fresh pairing session');
+  }
+}
+
 /**
  * Request an 8-digit pairing code from WhatsApp using a phone number.
  */
 export async function getPairingCode(phoneNumber: string): Promise<string> {
-  const state = getState();
-  if (state.isConnected) {
-    throw new Error('WhatsApp engine is ALREADY connected! Refresh the page to copy your cloud deployment code.');
-  }
-
-  // Check if creds.json is already registered
-  const credsPath = path.join(AUTH_DIR, 'creds.json');
-  if (fs.existsSync(credsPath)) {
-    try {
-      const creds = JSON.parse(fs.readFileSync(credsPath, 'utf-8'));
-      if (creds.registered || creds.me?.id) {
-        state.isConnected = true;
-        throw new Error('WhatsApp is ALREADY linked on this server! Refresh /setup to export your cloud code.');
-      }
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      if (msg.includes('ALREADY linked')) throw e;
-    }
-  }
-
   const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
   if (!cleanPhone || cleanPhone.length < 8) {
     throw new Error('Please enter a valid phone number with country code (e.g. 94770153179)');
   }
 
-  let sock = getSocket();
-  if (!sock || state.isLoggedOut) {
-    state.isLoggedOut = false;
-    await initWhatsApp();
-    sock = getSocket();
-  }
+  // Force clean wipe of previous session so old keys don't break new phone pairing
+  await resetAuthSession();
+  await initWhatsApp();
+
+  const sock = getSocket();
   if (!sock) {
     throw new Error('FAILED_TO_INIT_SOCKET');
   }
