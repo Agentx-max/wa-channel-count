@@ -1,212 +1,153 @@
-# WA Live Count
+# 🚀 WA Live Count
 
-> Track any WhatsApp Channel's live subscriber/follower count in real time.
+> Track any WhatsApp Channel's live subscriber & follower count in real time with an ultra-clean, mobile-responsive UI.
 
-Built with **Next.js 15**, **TypeScript**, **Tailwind CSS 4**, and **Baileys**.
+Created with ❤️ by **Agent X**.
 
----
-
-## Table of Contents
-
-1. [Prerequisites](#prerequisites)
-2. [Installation](#installation)
-3. [Running the App](#running-the-app)
-4. [Connecting WhatsApp](#connecting-whatsapp)
-5. [How Channel Lookup Works](#how-channel-lookup-works)
-6. [Testing a Channel](#testing-a-channel)
-7. [Project Structure](#project-structure)
-8. [Production Build](#production-build)
-9. [Deployment Note](#deployment-note)
+Built with **Next.js 15 (Turbopack)**, **TypeScript**, **Tailwind CSS**, and **Baileys**.
 
 ---
 
-## Prerequisites
+## ⚠️ Important Warnings & Developer Guidelines
 
-- **Node.js 18+** — [Download here](https://nodejs.org/)
-- A WhatsApp account on a phone
+> [!WARNING]
+> ### 1. Use a Secondary WhatsApp Number (Recommended)
+> While this app **only performs read-only channel metadata queries** and **never sends messages or DMs**, developer best practice is to link a **secondary/spare WhatsApp number** (e.g. a secondary SIM or WhatsApp Business account) rather than your main personal WhatsApp account for 100% peace of mind.
 
-Check your Node version:
+> [!CAUTION]
+> ### 2. Never Run Localhost and Cloud Servers Concurrently
+> WhatsApp allows only **one active WebSocket connection per device session**. If both `localhost` and your cloud host (Render) connect simultaneously using the same credentials, WhatsApp will trigger `440 Conflict / Stream Errored` disconnects. Once you export your session to the cloud, **stop localhost (`Ctrl + C`)**.
+
+> [!IMPORTANT]
+> ### 3. Session Security
+> Never commit your `./auth/` folder to GitHub or expose session strings publicly. The `./auth/` folder is git-ignored by default. On production servers, session export endpoints are strictly locked down with `403 Forbidden` rules.
+
+---
+
+## ✨ Features
+
+- ⚡ **Real-Time Live Odometer Counter**: Smooth numerical transitions (SocialBlade/YouTube style).
+- 📱 **Mobile-First Responsive UI**: Auto-scaling digits, touch-friendly refresh rate pills, and zero iOS auto-zoom bugs.
+- ☁️ **Cloud Session Export (`WA_AUTH_BACKUP`)**: Export your authenticated local session as a Base64 environment variable for 24/7 cloud hosts like Render.
+- 🛡️ **3-Second Deduplication Cache**: Instant response for concurrent visitors while keeping WhatsApp queries low and safe.
+- ⏱️ **Custom Refresh Rates**: Switch live polling speed between 3s, 5s, 10s, and 30s.
+
+---
+
+## 🚀 Quick Start
+
+### 1. Installation
+
 ```bash
-node --version   # should be v18 or higher
-```
-
----
-
-## Installation
-
-```bash
+git clone https://github.com/Agentx-max/wa-channel-count.git
+cd wa-channel-count
 npm install
 ```
 
----
-
-## Running the App
+### 2. Local Setup & Linking
 
 ```bash
 npm run dev
 ```
 
-Open **http://localhost:3000** in your browser.
+1. Open **`http://localhost:3000/setup`** in your browser.
+2. Click **🔢 Phone Pairing Code** (or Scan QR Code).
+3. Enter your phone number with country code (e.g. `94770153179`).
+4. On your phone: Open **WhatsApp → Linked Devices → Link with phone number instead** and type the 8-digit code.
+5. The setup page will switch to **Engine Connected! ✓**.
 
 ---
 
-## Connecting WhatsApp
+## ☁️ 24/7 Cloud Deployment Guide (Render.com + UptimeRobot)
 
-The app uses **Baileys** to connect to WhatsApp over the WebSocket API.  
-Before you can look up channels, you must link a WhatsApp account.
+Serverless hosts (like Vercel, Netlify, or Cloudflare Workers) **cannot** maintain persistent WhatsApp WebSockets. Long-running container hosts like **Render.com** or **Railway.app** are required.
 
-1. Start the dev server: `npm run dev`
-2. Open **http://localhost:3000/setup**
-3. A QR code will appear
-4. On your phone: **WhatsApp → Menu (⋮) → Linked Devices → Link a Device**
-5. Scan the QR code
-6. The page will show ✅ **Connected!**
+### Step A: Export Session from Localhost
+1. Connect WhatsApp locally at `http://localhost:3000/setup`.
+2. Click **📤 Export Session for Cloud** and click **Copy**.
+3. Stop localhost in your terminal (`Ctrl + C`).
 
-Authentication credentials are stored in the `./auth/` folder.  
-**Never commit this folder — it contains your session keys.**
+### Step B: Deploy on Render.com
+1. Create a free **Web Service** on [Render.com](https://render.com) linked to your repository.
+2. **Build Command**: `npm run build`
+3. **Start Command**: `npm start`
+4. Go to **Environment** tab on Render and add:
+   - **Key**: `WA_AUTH_BACKUP`
+   - **Value**: *(Paste the copied Base64 string)*
+5. Click **Save Changes**.
 
-> If you are ever logged out, delete the `./auth/` folder and repeat the steps above.
+### Step C: Keep Awake 24/7 for Free (UptimeRobot)
+Render free servers sleep after 15 minutes of inactivity. Use UptimeRobot to keep it awake 24/7/365:
+1. Sign up at [UptimeRobot.com](https://uptimerobot.com).
+2. Click **+ Add New Monitor**.
+3. Select **`HTTP(s)`** and enter your Render website URL (e.g. `https://your-app.onrender.com`).
+4. Set interval to **`Every 5 minutes`** and save.
 
 ---
 
-## How Channel Lookup Works
+## 📡 API Endpoint
 
-1. You paste a URL like `https://whatsapp.com/channel/0029XXXX`
-2. The app extracts the invite code from the URL
-3. The Next.js API route calls Baileys `newsletterMetadata("invite", code)`
-4. Baileys resolves the code via WhatsApp and returns metadata including the subscriber count
-5. The result is returned as JSON and displayed
-6. Every **10 seconds**, the count is automatically refreshed
+### `GET /api/channel`
 
-### API Endpoint
+Resolves a WhatsApp Channel invite link to metadata and live follower counts.
 
-```
-GET /api/channel?url=https://whatsapp.com/channel/0029...
+```http
+GET /api/channel?url=https://whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M
 ```
 
-**Success:**
+#### Response Example:
 ```json
 {
   "success": true,
   "channel": {
-    "name": "TechKey",
-    "followers": 4238,
-    "id": "120363XXXXXXXX@newsletter",
-    "picture": null,
-    "fetchedAt": "2025-01-01T12:00:00.000Z"
+    "name": "WhatsApp",
+    "followers": 182450123,
+    "id": "120363144038483540@newsletter",
+    "picture": "https://pps.whatsapp.net/v/t61.24694-24/...",
+    "verified": true,
+    "fetchedAt": "2026-09-25T12:00:00.000Z"
   }
 }
 ```
 
-**Error:**
-```json
-{
-  "success": false,
-  "error": "Channel not found.",
-  "code": "CHANNEL_NOT_FOUND"
-}
-```
-
 ---
 
-## Testing a Channel
-
-1. Open http://localhost:3000
-2. Paste any public WhatsApp Channel URL:
-   ```
-   https://whatsapp.com/channel/0029Va4EaRQFG8JxbcM3GV2Q
-   ```
-3. Click **Check Channel**
-4. The follower count appears and updates every 10 seconds
-
----
-
-## Project Structure
+## 📁 Project Structure
 
 ```
 .
 ├── app/
-│   ├── layout.tsx          # Root HTML layout + metadata
-│   ├── page.tsx            # Home page
-│   ├── globals.css         # Global dark theme styles
+│   ├── layout.tsx          # Root HTML layout & fonts
+│   ├── page.tsx            # Main live counter page
+│   ├── globals.css         # Glassmorphism & dark theme styles
 │   ├── setup/
-│   │   └── page.tsx        # WhatsApp QR auth page
+│   │   └── page.tsx        # Phone pairing & cloud export admin page
 │   └── api/
 │       ├── channel/
-│       │   └── route.ts    # GET /api/channel — follower lookup
-│       └── auth/
-│           └── route.ts    # GET/POST /api/auth — connection status
+│       │   └── route.ts    # GET /api/channel — Live subscriber lookup
+│       ├── auth/
+│       │   └── route.ts    # GET/POST /api/auth — Socket status & pairing
+│       └── auth/export/
+│           └── route.ts    # GET /api/auth/export — Base64 session export (local only)
 │
 ├── components/
-│   ├── ChannelCard.tsx     # Orchestrates input ↔ counter views
-│   ├── ChannelInput.tsx    # URL input form with validation
-│   └── LiveCounter.tsx     # Live follower counter + polling
+│   ├── ChannelCard.tsx     # Card container & view toggler
+│   ├── ChannelInput.tsx    # URL input, validation & test chips
+│   ├── LiveCounter.tsx     # Live counter & refresh controls
+│   └── OdometerCounter.tsx # Smooth digit animation engine
 │
 ├── lib/
-│   ├── types.ts            # TypeScript interfaces
-│   ├── whatsapp.ts         # Baileys singleton connection manager
-│   ├── channel.ts          # Newsletter → ChannelData mapping
-│   ├── validation.ts       # URL parsing and validation
-│   └── rateLimit.ts        # In-memory IP rate limiting
+│   ├── whatsapp.ts         # Baileys singleton manager & cache
+│   ├── channel.ts          # Newsletter metadata mapping
+│   ├── validation.ts       # WhatsApp channel URL validator
+│   └── rateLimit.ts        # IP rate limiting engine
 │
-├── auth/                   # WhatsApp session files (auto-created, git-ignored)
-├── .env.example            # Environment variables template
-├── next.config.mjs
-├── tsconfig.json
+├── auth/                   # Local WhatsApp session keys (Git-ignored)
 └── package.json
 ```
 
 ---
 
-## Production Build
+## 🧑‍💻 Author
 
-```bash
-npm run build
-npm start
-```
-
----
-
-## Type Checking & Linting
-
-```bash
-npm run type-check   # TypeScript strict check
-npm run lint         # ESLint
-```
-
----
-
-## Deployment & Netlify Guide
-
-> ⚠️ **Important Architecture Note:** This app uses **Baileys**, which maintains a persistent WebSocket connection to WhatsApp servers and saves session keys to disk (`./auth_info_baileys/`).
-
-### Option A: Render / Railway / VPS Deployment (Recommended for 100% Uptime)
-Because platforms like Render, Railway, Fly.io, or VPS (DigitalOcean/Hetzner) support persistent Node.js background services:
-1. Push your repository to GitHub.
-2. Create a new Web Service on [Render.com](https://render.com) or [Railway.app](https://railway.app).
-3. Set **Build Command**: `npm run build`
-4. Set **Start Command**: `npm start`
-5. Mount a persistent disk for the `./auth_info_baileys` folder so session state is preserved across redeploys.
-
-### Option B: Netlify Deployment
-To deploy on [Netlify](https://netlify.com):
-1. **Connect Repository**: Push your code to GitHub and link it to Netlify.
-2. **Build Settings**:
-   - **Framework**: Next.js
-   - **Build Command**: `npm run build`
-   - **Publish Directory**: `.next`
-3. **Environment**:
-   - Ensure Node version is set to 18+ (`NODE_VERSION` = `20`).
-4. **Netlify Functions & WebSocket Note**:
-   Netlify Functions are ephemeral (spin up per request). When using Netlify, either:
-   - Deploy your Node server on Render/Railway and point your Netlify frontend to it.
-   - OR use an external Redis/MongoDB session store (`useRedisAuthState`) for zero-downtime serverless auth.
-
----
-
-## Security
-
-- WhatsApp credentials (`./auth/`) are **never** sent to the browser
-- The `/api/channel` endpoint only accepts `whatsapp.com/channel/*` URLs
-- Rate limiting: 12 requests per minute per IP
-- No external URLs are fetched — only WhatsApp's own API via Baileys
+Created & Maintained by **Agent X**.
