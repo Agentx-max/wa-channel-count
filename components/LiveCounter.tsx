@@ -24,7 +24,7 @@ const DIGIT_COLORS = [
   { name: 'Sky Blue', hex: '#38BDF8' },
 ];
 
-const POLL_INTERVAL = 5000; // Locked to 5 seconds
+const POLL_INTERVAL = 10000; // Locked to 10 seconds (hidden from users)
 
 export default function LiveCounter({ channel: initialChannel, channelUrl, onReset }: LiveCounterProps) {
   const [channel, setChannel] = useState<ChannelData>(initialChannel);

@@ -340,9 +340,10 @@ export function getConnectionStatus() {
 // Channel / Newsletter helpers
 // ---------------------------------------------------------------------------
 
-// In-memory short cache to eliminate latency on rapid live polling
+// In-memory short cache to eliminate latency and protect WA account on rapid live polling
 const newsletterCache = new Map<string, { data: NewsletterMetadata; timestamp: number }>();
-const CACHE_TTL_MS = 3000; // 3 seconds cache
+const newsletterInflight = new Map<string, Promise<NewsletterMetadata>>();
+const CACHE_TTL_MS = 10000; // 10 seconds cache
 
 /**
  * Resolve a newsletter invite code to metadata.
@@ -372,56 +373,72 @@ export async function fetchNewsletterByInvite(
     throw new Error('WA_NOT_CONNECTED');
   }
 
-  // Return cached result if fresh (< 3 seconds)
+  // Return cached result if fresh (< 10 seconds)
   const cached = newsletterCache.get(inviteCode);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     return cached.data;
   }
 
-  try {
-    const metadata = await sock.newsletterMetadata('invite', inviteCode);
-    if (!metadata) {
-      throw new Error('CHANNEL_NOT_FOUND');
-    }
-
-    // Instantly extract directPath for profile picture without blocking network calls
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const raw = metadata as any;
-    const directPath =
-      raw.picture?.directPath ||
-      raw.picture?.direct_path ||
-      raw.thread_metadata?.picture?.direct_path ||
-      raw.thread_metadata?.preview?.direct_path ||
-      raw.threadMetadata?.picture?.direct_path ||
-      raw.threadMetadata?.preview?.direct_path;
-
-    if (directPath && typeof directPath === 'string') {
-      const cdnUrl = directPath.startsWith('/')
-        ? `https://pps.whatsapp.net${directPath}`
-        : directPath;
-      if (!metadata.picture) {
-        metadata.picture = { url: cdnUrl };
-      } else {
-        metadata.picture.url = cdnUrl;
-      }
-    }
-
-    // Store in short cache
-    newsletterCache.set(inviteCode, { data: metadata, timestamp: Date.now() });
-
-    return metadata;
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-
-    if (message.includes('not-found') || message.includes('404')) {
-      throw new Error('CHANNEL_NOT_FOUND');
-    }
-    if (message.includes('timed out') || message.includes('timeout')) {
-      throw new Error('NETWORK_TIMEOUT');
-    }
-
-    throw new Error(`WA_BAILEYS_ERROR: ${message}`);
+  // Inflight promise coalescing: if a fetch for this inviteCode is already running, wait for it!
+  const existingInflight = newsletterInflight.get(inviteCode);
+  if (existingInflight) {
+    return existingInflight;
   }
+
+  const fetchPromise = (async () => {
+    try {
+      const activeSock = getSocket();
+      if (!activeSock) throw new Error('WA_NOT_CONNECTED');
+
+      const metadata = await activeSock.newsletterMetadata('invite', inviteCode);
+      if (!metadata) {
+        throw new Error('CHANNEL_NOT_FOUND');
+      }
+
+      // Instantly extract directPath for profile picture without blocking network calls
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = metadata as any;
+      const directPath =
+        raw.picture?.directPath ||
+        raw.picture?.direct_path ||
+        raw.thread_metadata?.picture?.direct_path ||
+        raw.thread_metadata?.preview?.direct_path ||
+        raw.threadMetadata?.picture?.direct_path ||
+        raw.threadMetadata?.preview?.direct_path;
+
+      if (directPath && typeof directPath === 'string') {
+        const cdnUrl = directPath.startsWith('/')
+          ? `https://pps.whatsapp.net${directPath}`
+          : directPath;
+        if (!metadata.picture) {
+          metadata.picture = { url: cdnUrl };
+        } else {
+          metadata.picture.url = cdnUrl;
+        }
+      }
+
+      // Store in short cache (10s)
+      newsletterCache.set(inviteCode, { data: metadata, timestamp: Date.now() });
+
+      return metadata;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+
+      if (message.includes('not-found') || message.includes('404')) {
+        throw new Error('CHANNEL_NOT_FOUND');
+      }
+      if (message.includes('timed out') || message.includes('timeout')) {
+        throw new Error('NETWORK_TIMEOUT');
+      }
+
+      throw new Error(`WA_BAILEYS_ERROR: ${message}`);
+    } finally {
+      newsletterInflight.delete(inviteCode);
+    }
+  })();
+
+  newsletterInflight.set(inviteCode, fetchPromise);
+  return fetchPromise;
 }
 
 export async function resetAuthSession(): Promise<void> {

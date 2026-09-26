@@ -54,8 +54,8 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       {
         status: 200,
         headers: {
-          // Prevent browsers from caching this response
-          'Cache-Control': 'no-store, max-age=0',
+          // Allow Cloudflare and edge proxies to cache response for 10s to handle high traffic
+          'Cache-Control': 'public, max-age=10, s-maxage=10, stale-while-revalidate=5',
         },
       },
     );
