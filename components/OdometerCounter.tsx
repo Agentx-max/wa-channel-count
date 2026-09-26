@@ -1,16 +1,41 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
+import { getTextShadowCSS } from '@/lib/customization';
 
 interface OdometerCounterProps {
   value: number;
   fontSize?: string;
   duration?: number; // Animation duration in ms
+  digitColor?: string;
+  glowColor?: string;
+  glowIntensity?: 'none' | 'subtle' | 'neon' | 'hyper';
+  isGradient?: boolean;
+  fontFamily?: string;
+  sizeMultiplier?: number;
+  separatorType?: 'comma' | 'dot' | 'space' | 'none';
+  separatorColor?: string;
 }
 
 const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-function DigitColumn({ digit }: { digit: number }) {
+interface DigitColumnProps {
+  digit: number;
+  digitColor: string;
+  glowColor: string;
+  glowIntensity: 'none' | 'subtle' | 'neon' | 'hyper';
+  isGradient: boolean;
+}
+
+function DigitColumn({
+  digit,
+  digitColor,
+  glowColor,
+  glowIntensity,
+  isGradient,
+}: DigitColumnProps) {
+  const isGrad = isGradient || digitColor.startsWith('linear-gradient');
+
   return (
     <span
       className="digit-col"
@@ -52,9 +77,21 @@ function DigitColumn({ digit }: { digit: number }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--text-primary)',
               background: 'transparent',
               backgroundColor: 'transparent',
+              ...(isGrad
+                ? {
+                    backgroundImage: digitColor,
+                    WebkitBackgroundImage: digitColor,
+                    WebkitBackgroundClip: 'text',
+                    backgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    color: 'transparent',
+                  }
+                : {
+                    color: digitColor,
+                    textShadow: getTextShadowCSS(glowIntensity, glowColor),
+                  }),
             }}
           >
             {d}
@@ -69,6 +106,14 @@ export default function OdometerCounter({
   value,
   fontSize = '72px',
   duration = 1500,
+  digitColor = '#ffffff',
+  glowColor = '#25D366',
+  glowIntensity = 'subtle',
+  isGradient = false,
+  fontFamily = "'Inter', system-ui, -apple-system, sans-serif",
+  sizeMultiplier = 1,
+  separatorType = 'comma',
+  separatorColor = 'var(--green)',
 }: OdometerCounterProps) {
   const [displayValue, setDisplayValue] = useState<number>(value);
   const animRef = useRef<number | null>(null);
@@ -78,6 +123,11 @@ export default function OdometerCounter({
   // Smooth numerical interpolation (YouTube / SocialBlade style)
   useEffect(() => {
     if (value === displayValue) return;
+
+    if (duration <= 0) {
+      setDisplayValue(value);
+      return;
+    }
 
     const startVal = displayValue;
     const targetVal = value;
@@ -116,13 +166,37 @@ export default function OdometerCounter({
   const chars = formatted.split('');
 
   // Dynamically scale font size based on digit count to prevent container overflow
-  const computedFontSize = fontSize
+  const rawFontSize = fontSize
     ? fontSize
     : chars.length > 9
       ? 'clamp(24px, 5vw, 42px)'
       : chars.length > 6
         ? 'clamp(32px, 6.5vw, 56px)'
         : 'clamp(44px, 8.5vw, 76px)';
+
+  const computedFontSize = sizeMultiplier === 1
+    ? rawFontSize
+    : `calc(${rawFontSize} * ${sizeMultiplier})`;
+
+  const isGrad = isGradient || digitColor.startsWith('linear-gradient');
+
+  // Compute filter for gradient glows
+  const filterGlow = isGrad && glowIntensity !== 'none'
+    ? glowIntensity === 'hyper'
+      ? `drop-shadow(0 0 12px ${glowColor}) drop-shadow(0 0 24px ${glowColor})`
+      : glowIntensity === 'neon'
+        ? `drop-shadow(0 0 8px ${glowColor})`
+        : `drop-shadow(0 0 5px ${glowColor}70)`
+    : undefined;
+
+  const separatorChar =
+    separatorType === 'dot'
+      ? '.'
+      : separatorType === 'space'
+        ? ' '
+        : separatorType === 'none'
+          ? ''
+          : ',';
 
   return (
     <div
@@ -132,36 +206,49 @@ export default function OdometerCounter({
         justifyContent: 'center',
         fontSize: computedFontSize,
         fontWeight: '800',
-        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+        fontFamily,
         letterSpacing: '-0.03em',
         lineHeight: 1,
-        color: 'var(--text-primary)',
         userSelect: 'none',
-        textShadow: '0 0 30px rgba(37, 211, 102, 0.25)',
         maxWidth: '100%',
         overflow: 'hidden',
+        filter: filterGlow,
+        transition: 'font-size 0.25s ease, filter 0.25s ease',
       }}
     >
       {chars.map((char, index) => {
         if (char === ',') {
+          if (separatorType === 'none') {
+            return null;
+          }
           return (
             <span
-              key={`comma-${chars.length - index}`}
+              key={`sep-${chars.length - index}`}
               style={{
                 display: 'inline-block',
-                margin: '0 2px',
-                color: 'var(--green)',
-                opacity: 0.8,
+                margin: separatorType === 'space' ? '0 5px' : '0 2px',
+                color: separatorColor || 'var(--green)',
+                opacity: 0.85,
+                fontWeight: '700',
+                lineHeight: 1,
+                userSelect: 'none',
               }}
             >
-              ,
+              {separatorChar}
             </span>
           );
         }
 
         const digit = parseInt(char, 10);
         return (
-          <DigitColumn key={`digit-${chars.length - index}`} digit={digit} />
+          <DigitColumn
+            key={`digit-${chars.length - index}`}
+            digit={digit}
+            digitColor={digitColor}
+            glowColor={glowColor}
+            glowIntensity={glowIntensity}
+            isGradient={isGrad}
+          />
         );
       })}
     </div>

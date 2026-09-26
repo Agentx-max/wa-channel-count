@@ -18,6 +18,8 @@ build/
 # WhatsApp auth — NEVER commit these
 auth/
 *.creds.json
+creds.json
+scratch/
 
 # Logs
 npm-debug.log*
