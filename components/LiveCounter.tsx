@@ -36,11 +36,12 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
   const [countChanged, setCountChanged] = useState(false);
   const [imgError, setImgError] = useState(false);
 
-  // Customization state
+  // Customization & Full Screen state
   const [digitColor, setDigitColor] = useState<string>('#ffffff');
   const [showRealTime, setShowRealTime] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<string>('');
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const clockRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -82,7 +83,7 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
     });
   };
 
-  // Reset to default
+  // Reset settings
   const handleResetSettings = () => {
     setDigitColor('#ffffff');
     setShowRealTime(false);
@@ -126,7 +127,40 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
     };
   }, [settingsOpen]);
 
-  // Periodic polling for live subscriber updates locked to 5 seconds
+  // Full Screen Handlers
+  const enterFullscreen = () => {
+    setIsFullscreen(true);
+    try {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const exitFullscreen = () => {
+    setIsFullscreen(false);
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
+  // Periodic polling for live subscriber updates locked to 10 seconds
   useEffect(() => {
     async function refresh() {
       setRefreshing(true);
@@ -206,7 +240,7 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
 
   return (
     <div style={{ width: '100%', position: 'relative' }}>
-      {/* Header with Channel Info */}
+      {/* Header with Channel Info & Action Buttons */}
       <div
         style={{
           display: 'flex',
@@ -286,42 +320,81 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
           </div>
         </div>
 
-        {/* Change Channel Button */}
-        <button
-          id="reset-btn"
-          onClick={onReset}
-          title="Search another channel"
-          style={{
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '12px',
-            color: 'var(--text-secondary)',
-            padding: '8px 12px',
-            cursor: 'pointer',
-            fontSize: '12px',
-            fontWeight: '600',
-            fontFamily: 'inherit',
-            transition: 'all 0.2s ease',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            flexShrink: 0,
-            whiteSpace: 'nowrap',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
-            e.currentTarget.style.color = 'var(--text-primary)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-            e.currentTarget.style.color = 'var(--text-secondary)';
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
-          </svg>
-          <span className="mobile-hide">Change</span>
-        </button>
+        {/* Action Buttons: Full Screen & Change Channel */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          {/* Full Screen Button */}
+          <button
+            id="fullscreen-btn"
+            onClick={enterFullscreen}
+            title="Full screen live counter"
+            aria-label="Full screen counter"
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '12px',
+              color: 'var(--text-secondary)',
+              padding: '8px 12px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: '600',
+              fontFamily: 'inherit',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+              e.currentTarget.style.color = 'var(--text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+              e.currentTarget.style.color = 'var(--text-secondary)';
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+            </svg>
+            <span className="mobile-hide">Full Screen</span>
+          </button>
+
+          {/* Change Channel Button */}
+          <button
+            id="reset-btn"
+            onClick={onReset}
+            title="Search another channel"
+            style={{
+              background: 'rgba(255,255,255,0.06)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '12px',
+              color: 'var(--text-secondary)',
+              padding: '8px 12px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              fontWeight: '600',
+              fontFamily: 'inherit',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+              e.currentTarget.style.color = 'var(--text-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+              e.currentTarget.style.color = 'var(--text-secondary)';
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+            </svg>
+            <span className="mobile-hide">Change</span>
+          </button>
+        </div>
       </div>
 
       {/* Divider */}
@@ -726,6 +799,169 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
           )}
         </div>
       </div>
+
+      {/* FULL SCREEN OVERLAY VIEW (Shows Channel Logo, Name, and Live Follower Count ONLY) */}
+      {isFullscreen && (
+        <div
+          id="fullscreen-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 999999,
+            background: '#07090e',
+            backgroundImage:
+              'radial-gradient(ellipse 100% 70% at 50% 20%, rgba(37,211,102,0.18) 0%, transparent 80%)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px',
+            overflow: 'hidden',
+            animation: 'fadeIn 0.25s ease',
+          }}
+        >
+          {/* Exit Fullscreen Button */}
+          <button
+            onClick={exitFullscreen}
+            title="Exit Full Screen (Esc)"
+            style={{
+              position: 'absolute',
+              top: '24px',
+              right: '24px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '12px',
+              color: '#ffffff',
+              padding: '10px 16px',
+              fontSize: '13px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backdropFilter: 'blur(10px)',
+              zIndex: 10,
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.16)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            <span>Exit Full Screen</span>
+          </button>
+
+          {/* Full Screen Main Content: Logo, Name & Live Count ONLY */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textAlign: 'center',
+              maxWidth: '90vw',
+            }}
+          >
+            {/* 1. Channel Logo */}
+            <div
+              style={{
+                width: 'clamp(90px, 16vw, 150px)',
+                height: 'clamp(90px, 16vw, 150px)',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                border: '4px solid rgba(37,211,102,0.5)',
+                boxShadow: '0 12px 48px rgba(37,211,102,0.35)',
+                marginBottom: '24px',
+              }}
+            >
+              {channel.picture && !imgError ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={channel.picture}
+                  alt={`${channel.name} channel picture`}
+                  referrerPolicy="no-referrer"
+                  onError={() => setImgError(true)}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              ) : (
+                <span
+                  style={{
+                    fontSize: 'clamp(36px, 6vw, 64px)',
+                    fontWeight: '800',
+                    color: '#ffffff',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {channel.name ? channel.name.charAt(0) : 'W'}
+                </span>
+              )}
+            </div>
+
+            {/* 2. Channel Name & Verified Badge */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                marginBottom: '32px',
+              }}
+            >
+              <h1
+                style={{
+                  fontSize: 'clamp(28px, 6vw, 54px)',
+                  fontWeight: '800',
+                  color: '#ffffff',
+                  margin: 0,
+                  letterSpacing: '-0.02em',
+                  textShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                }}
+              >
+                {channel.name}
+              </h1>
+              {channel.verified && (
+                <span title="Verified Channel" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="#25D366">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                  </svg>
+                </span>
+              )}
+            </div>
+
+            {/* 3. Live Follower Count ONLY */}
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+              <OdometerCounter
+                value={channel.followers}
+                fontSize="clamp(64px, 18vw, 170px)"
+                digitColor={digitColor}
+              />
+            </div>
+
+            <p
+              style={{
+                fontSize: '14px',
+                fontWeight: '800',
+                letterSpacing: '0.25em',
+                textTransform: 'uppercase',
+                color: 'var(--text-secondary)',
+                marginTop: '24px',
+              }}
+            >
+              Live Followers
+            </p>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes pulse {

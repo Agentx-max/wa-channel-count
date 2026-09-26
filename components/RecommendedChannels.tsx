@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 
@@ -60,23 +60,38 @@ const RAW_CHANNELS: ChannelEntry[] = [
     avatarColor: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)',
   },
   {
-    name: 'Astronomy Lanka 🇱🇰',
-    url: 'https://whatsapp.com/channel/0029VaE3Jb7EKyZ8hCltnA3x',
-    inviteCode: '0029VaE3Jb7EKyZ8hCltnA3x',
-    avatarColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    name: 'Sinhala Subtitles.lk 🇱🇰',
+    url: 'https://whatsapp.com/channel/0029Va94Yp07IUYSfK3G7t1m',
+    inviteCode: '0029Va94Yp07IUYSfK3G7t1m',
+    avatarColor: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
   },
 ];
 
-function formatCount(n: number | null): string {
-  if (n === null) return '—';
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
-  return n.toLocaleString();
+function formatCount(c: number | null): string {
+  if (c === null) return '...';
+  if (c >= 1_000_000) return `${(c / 1_000_000).toFixed(1)}M`;
+  if (c >= 10_000) return `${(c / 1_000).toFixed(0)}K`;
+  return c.toLocaleString('en-US');
+}
+
+function VerifiedBadge() {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="#25D366"
+      style={{ flexShrink: 0 }}
+    >
+      <title>Verified Channel</title>
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+    </svg>
+  );
 }
 
 function CopyIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
       <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
       <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
     </svg>
@@ -85,16 +100,8 @@ function CopyIcon() {
 
 function CheckIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
       <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function VerifiedBadge() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--green)" style={{ flexShrink: 0 }}>
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
     </svg>
   );
 }
@@ -130,40 +137,32 @@ function ChannelRow({ channel, index }: { channel: ChannelWithData; index: numbe
     label: `${index + 1}`,
   };
 
-  // Fallback initial character for logo
   const initialChar = Array.from(channel.name.replace(/[^a-zA-Z0-9\u0D80-\u0DFF]/g, ''))[0] || '📢';
 
   return (
     <div
+      className="rec-channel-row"
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '12px',
-        padding: '12px 14px',
+        gap: '10px',
+        padding: '10px 12px',
         borderRadius: '16px',
         background: 'rgba(255, 255, 255, 0.02)',
         border: '1px solid rgba(255, 255, 255, 0.06)',
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
-        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
-      }}
-      onMouseEnter={e => {
-        (e.currentTarget as HTMLDivElement).style.background = 'rgba(255, 255, 255, 0.05)';
-        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(37, 211, 102, 0.25)';
-        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-1px)';
-      }}
-      onMouseLeave={e => {
-        (e.currentTarget as HTMLDivElement).style.background = 'rgba(255, 255, 255, 0.02)';
-        (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255, 255, 255, 0.06)';
-        (e.currentTarget as HTMLDivElement).style.transform = 'translateY(0)';
+        transition: 'all 0.2s ease',
+        overflow: 'hidden',
+        width: '100%',
       }}
     >
       {/* Rank badge */}
       <span
         style={{
-          width: '24px',
-          height: '24px',
-          borderRadius: '7px',
+          width: '22px',
+          height: '22px',
+          borderRadius: '6px',
           background: currentRank.bg,
           display: 'flex',
           alignItems: 'center',
@@ -172,7 +171,6 @@ function ChannelRow({ channel, index }: { channel: ChannelWithData; index: numbe
           fontWeight: '800',
           color: currentRank.text,
           flexShrink: 0,
-          boxShadow: index < 3 ? '0 2px 8px rgba(0,0,0,0.3)' : 'none',
         }}
       >
         {currentRank.label}
@@ -181,17 +179,16 @@ function ChannelRow({ channel, index }: { channel: ChannelWithData; index: numbe
       {/* Channel Logo / Avatar */}
       <div
         style={{
-          width: '42px',
-          height: '42px',
-          borderRadius: '12px',
+          width: '38px',
+          height: '38px',
+          borderRadius: '11px',
           overflow: 'hidden',
           background: channel.avatarColor,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           flexShrink: 0,
-          border: '1px solid rgba(255,255,255,0.15)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          border: '1px solid rgba(255,255,255,0.12)',
           position: 'relative',
         }}
       >
@@ -204,47 +201,51 @@ function ChannelRow({ channel, index }: { channel: ChannelWithData; index: numbe
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
-          <span style={{ fontSize: '18px', fontWeight: '700', color: '#fff', textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>
+          <span style={{ fontSize: '16px', fontWeight: '700', color: '#fff' }}>
             {initialChar}
           </span>
         )}
       </div>
 
-      {/* Channel Info */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+      {/* Channel Info (Name + Followers) */}
+      <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0 }}>
           <p
             style={{
               margin: 0,
-              fontSize: '14px',
+              fontSize: '13.5px',
               fontWeight: '600',
               color: '#ffffff',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              letterSpacing: '-0.2px',
+              lineHeight: '1.3',
+              flex: 1,
+              minWidth: 0,
             }}
           >
             {channel.name}
           </p>
           {channel.verified && <VerifiedBadge />}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
           <span
             style={{
-              width: '6px',
-              height: '6px',
+              width: '5px',
+              height: '5px',
               borderRadius: '50%',
               background: channel.loading ? 'var(--text-muted)' : 'var(--green)',
-              boxShadow: channel.loading ? 'none' : '0 0 8px var(--green)',
+              boxShadow: channel.loading ? 'none' : '0 0 6px var(--green)',
               display: 'inline-block',
+              flexShrink: 0,
             }}
           />
           <span
             style={{
-              fontSize: '12px',
+              fontSize: '11.5px',
               color: channel.loading ? 'var(--text-muted)' : 'var(--text-secondary)',
               fontWeight: '500',
+              whiteSpace: 'nowrap',
             }}
           >
             {channel.loading ? 'Updating count...' : `${formatCount(channel.count)} followers`}
@@ -253,16 +254,16 @@ function ChannelRow({ channel, index }: { channel: ChannelWithData; index: numbe
       </div>
 
       {/* Action Buttons */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
         {/* Copy Link */}
         <button
           onClick={handleCopy}
           title="Copy channel link"
           aria-label="Copy channel link"
           style={{
-            width: '34px',
-            height: '34px',
-            borderRadius: '10px',
+            width: '32px',
+            height: '32px',
+            borderRadius: '9px',
             border: '1px solid rgba(255,255,255,0.1)',
             background: copied ? 'rgba(37,211,102,0.18)' : 'rgba(255,255,255,0.04)',
             color: copied ? 'var(--green)' : 'var(--text-secondary)',
@@ -270,19 +271,7 @@ function ChannelRow({ channel, index }: { channel: ChannelWithData; index: numbe
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'all 0.2s ease',
-          }}
-          onMouseEnter={e => {
-            if (!copied) {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.25)';
-              (e.currentTarget as HTMLButtonElement).style.color = '#fff';
-            }
-          }}
-          onMouseLeave={e => {
-            if (!copied) {
-              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)';
-              (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
-            }
+            transition: 'all 0.15s ease',
           }}
         >
           {copied ? <CheckIcon /> : <CopyIcon />}
@@ -294,34 +283,21 @@ function ChannelRow({ channel, index }: { channel: ChannelWithData; index: numbe
           target="_blank"
           rel="noopener noreferrer"
           style={{
-            padding: '7px 14px',
-            borderRadius: '10px',
+            padding: '6px 12px',
+            borderRadius: '9px',
             background: 'linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%)',
             color: '#ffffff',
-            fontSize: '12.5px',
+            fontSize: '12px',
             fontWeight: '700',
             textDecoration: 'none',
             whiteSpace: 'nowrap',
-            boxShadow: '0 2px 10px var(--green-glow)',
-            transition: 'all 0.2s ease',
+            boxShadow: '0 2px 8px var(--green-glow)',
+            transition: 'all 0.15s ease',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '4px',
-          }}
-          onMouseEnter={e => {
-            (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-1px) scale(1.03)';
-            (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 4px 16px var(--green-glow-strong)';
-          }}
-          onMouseLeave={e => {
-            (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0) scale(1)';
-            (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 2px 10px var(--green-glow)';
           }}
         >
           <span>Follow</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="7" y1="17" x2="17" y2="7" />
-            <polyline points="7 7 17 7 17 17" />
-          </svg>
         </a>
       </div>
     </div>
@@ -329,9 +305,9 @@ function ChannelRow({ channel, index }: { channel: ChannelWithData; index: numbe
 }
 
 export default function RecommendedChannels() {
-  const [channels, setChannels] = useState<ChannelWithData[]>(
-    RAW_CHANNELS.map(c => ({
-      ...c,
+  const [channels, setChannels] = useState<ChannelWithData[]>(() =>
+    RAW_CHANNELS.map((ch) => ({
+      ...ch,
       count: null,
       picture: null,
       verified: false,
@@ -344,41 +320,40 @@ export default function RecommendedChannels() {
 
     const fetchAll = async () => {
       const results = await Promise.allSettled(
-        RAW_CHANNELS.map(async ch => {
+        RAW_CHANNELS.map(async (ch) => {
           const res = await fetch(`/api/channel?url=${encodeURIComponent(ch.url)}`);
-          if (!res.ok) throw new Error('fetch failed');
+          if (!res.ok) return { inviteCode: ch.inviteCode, count: null, picture: null, verified: false };
           const data = await res.json();
           if (data.success && data.channel) {
             return {
               inviteCode: ch.inviteCode,
-              count: (data.channel.followers as number) ?? null,
-              picture: (data.channel.picture as string) ?? null,
+              count: data.channel.followers as number,
+              picture: data.channel.picture as string | null,
               verified: Boolean(data.channel.verified),
             };
           }
-          throw new Error('invalid response');
+          return { inviteCode: ch.inviteCode, count: null, picture: null, verified: false };
         })
       );
 
       if (cancelled) return;
 
-      const dataMap: Record<string, { count: number | null; picture: string | null; verified: boolean }> = {};
-      results.forEach((r, i) => {
-        if (r.status === 'fulfilled') {
-          dataMap[RAW_CHANNELS[i].inviteCode] = r.value;
-        } else {
-          dataMap[RAW_CHANNELS[i].inviteCode] = { count: null, picture: null, verified: false };
-        }
-      });
-
-      setChannels(prev => {
-        const updated = prev.map(ch => ({
-          ...ch,
-          count: dataMap[ch.inviteCode]?.count ?? null,
-          picture: dataMap[ch.inviteCode]?.picture ?? null,
-          verified: dataMap[ch.inviteCode]?.verified ?? false,
-          loading: false,
-        }));
+      setChannels((prev) => {
+        const updated = prev.map((ch) => {
+          const match = results.find(
+            (r) => r.status === 'fulfilled' && r.value.inviteCode === ch.inviteCode
+          );
+          if (match && match.status === 'fulfilled') {
+            return {
+              ...ch,
+              count: match.value.count,
+              picture: match.value.picture,
+              verified: match.value.verified,
+              loading: false,
+            };
+          }
+          return { ...ch, loading: false };
+        });
 
         return [...updated].sort((a, b) => {
           if (a.count === null && b.count === null) return 0;
@@ -397,56 +372,59 @@ export default function RecommendedChannels() {
 
   return (
     <section
+      className="rec-channel-card"
       style={{
         width: '100%',
-        marginTop: '32px',
+        marginTop: '28px',
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: '24px',
-        padding: '24px 20px',
+        padding: '20px 18px',
         boxShadow: '0 12px 48px rgba(0, 0, 0, 0.4)',
         backdropFilter: 'blur(24px)',
         WebkitBackdropFilter: 'blur(24px)',
       }}
     >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <div
             style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '12px',
+              width: '36px',
+              height: '36px',
+              borderRadius: '11px',
               background: 'linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '18px',
+              fontSize: '17px',
               flexShrink: 0,
-              boxShadow: '0 4px 16px var(--green-glow)',
+              boxShadow: '0 4px 14px var(--green-glow)',
             }}
           >
             🔥
           </div>
           <div>
-            <h2 style={{ margin: 0, fontSize: '17px', fontWeight: '700', color: '#ffffff', letterSpacing: '-0.3px' }}>
+            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '700', color: '#ffffff', letterSpacing: '-0.3px' }}>
               Recommended Channels
             </h2>
-            <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-muted)' }}>
+            <p style={{ margin: '1px 0 0', fontSize: '11.5px', color: 'var(--text-muted)' }}>
               Top channels ranked by real-time followers
             </p>
           </div>
         </div>
 
         <span
+          className="mobile-hide"
           style={{
-            fontSize: '11px',
-            fontWeight: '600',
+            fontSize: '10.5px',
+            fontWeight: '700',
             color: 'var(--green)',
-            padding: '4px 10px',
+            padding: '4px 9px',
             borderRadius: '20px',
             background: 'rgba(37, 211, 102, 0.1)',
             border: '1px solid rgba(37, 211, 102, 0.2)',
+            letterSpacing: '0.05em',
           }}
         >
           LIVE RANKINGS
