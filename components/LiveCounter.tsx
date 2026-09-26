@@ -11,6 +11,21 @@ interface LiveCounterProps {
   onReset: () => void;
 }
 
+const DIGIT_COLORS = [
+  { name: 'Classic White', hex: '#ffffff' },
+  { name: 'WhatsApp Green', hex: '#25D366' },
+  { name: 'Neon Cyan', hex: '#00E5FF' },
+  { name: 'Gold Yellow', hex: '#FFC107' },
+  { name: 'Hot Pink', hex: '#FF2A85' },
+  { name: 'Purple', hex: '#A855F7' },
+  { name: 'Crimson Red', hex: '#FF3B30' },
+  { name: 'Vibrant Orange', hex: '#FF9500' },
+  { name: 'Lime Green', hex: '#84CC16' },
+  { name: 'Sky Blue', hex: '#38BDF8' },
+];
+
+const POLL_INTERVAL = 5000; // Locked to 5 seconds
+
 export default function LiveCounter({ channel: initialChannel, channelUrl, onReset }: LiveCounterProps) {
   const [channel, setChannel] = useState<ChannelData>(initialChannel);
   const [refreshing, setRefreshing] = useState(false);
@@ -19,13 +34,99 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
   const [secondsAgo, setSecondsAgo] = useState(0);
   const [prevCount, setPrevCount] = useState<number | null>(null);
   const [countChanged, setCountChanged] = useState(false);
-  const [pollInterval, setPollInterval] = useState<number>(5000); // 5 sec default for smooth live feel
   const [imgError, setImgError] = useState(false);
+
+  // Customization state
+  const [digitColor, setDigitColor] = useState<string>('#ffffff');
+  const [showRealTime, setShowRealTime] = useState<boolean>(false);
+  const [currentTime, setCurrentTime] = useState<string>('');
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const clockRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const settingsRef = useRef<HTMLDivElement | null>(null);
 
-  // Periodic polling for live subscriber updates
+  // Load saved preferences from localStorage on mount
+  useEffect(() => {
+    try {
+      const savedColor = localStorage.getItem('wa_counter_digit_color');
+      if (savedColor) setDigitColor(savedColor);
+
+      const savedShowClock = localStorage.getItem('wa_counter_show_clock');
+      if (savedShowClock !== null) setShowRealTime(savedShowClock === 'true');
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Save color preference
+  const handleColorChange = (hex: string) => {
+    setDigitColor(hex);
+    try {
+      localStorage.setItem('wa_counter_digit_color', hex);
+    } catch {
+      // ignore
+    }
+  };
+
+  // Toggle real-life time clock
+  const handleToggleRealTime = () => {
+    setShowRealTime((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('wa_counter_show_clock', String(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  // Reset to default
+  const handleResetSettings = () => {
+    setDigitColor('#ffffff');
+    setShowRealTime(false);
+    try {
+      localStorage.removeItem('wa_counter_digit_color');
+      localStorage.removeItem('wa_counter_show_clock');
+    } catch {
+      // ignore
+    }
+  };
+
+  // Ticking real-life clock
+  useEffect(() => {
+    const updateClock = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        })
+      );
+    };
+    updateClock();
+    const timer = setInterval(updateClock, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Close settings popover on click outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
+        setSettingsOpen(false);
+      }
+    }
+    if (settingsOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [settingsOpen]);
+
+  // Periodic polling for live subscriber updates locked to 5 seconds
   useEffect(() => {
     async function refresh() {
       setRefreshing(true);
@@ -57,12 +158,12 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
       }
     }
 
-    intervalRef.current = setInterval(refresh, pollInterval);
+    intervalRef.current = setInterval(refresh, POLL_INTERVAL);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channelUrl, channel.followers, pollInterval]);
+  }, [channelUrl, channel.followers]);
 
   // Clock: "Updated X seconds ago"
   useEffect(() => {
@@ -104,7 +205,7 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
   };
 
   return (
-    <div style={{ width: '100%' }}>
+    <div style={{ width: '100%', position: 'relative' }}>
       {/* Header with Channel Info */}
       <div
         style={{
@@ -232,7 +333,7 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
         }}
       />
 
-      {/* Follower Odometer Display */}
+      {/* Follower Odometer Display with Customizable Digit Color */}
       <div style={{ textAlign: 'center', marginBottom: '24px', width: '100%', overflow: 'hidden' }}>
         <div
           id="follower-count"
@@ -244,7 +345,11 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
             justifyContent: 'center',
           }}
         >
-          <OdometerCounter value={channel.followers} fontSize="clamp(36px, 11vw, 84px)" />
+          <OdometerCounter
+            value={channel.followers}
+            fontSize="clamp(36px, 11vw, 84px)"
+            digitColor={digitColor}
+          />
         </div>
 
         <p
@@ -278,7 +383,7 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
         )}
       </div>
 
-      {/* Live Status & Speed Controls */}
+      {/* Bottom Container Bar: LIVE Status, Real-Life Time Display & Settings Icon */}
       <div
         style={{
           display: 'flex',
@@ -290,9 +395,10 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: '16px',
           padding: '12px 16px',
+          position: 'relative',
         }}
       >
-        {/* LIVE Badge */}
+        {/* Left: LIVE Badge & Last Updated */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div
             style={{
@@ -340,35 +446,284 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
           </span>
         </div>
 
-        {/* Polling Interval Selectors */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', marginRight: '2px' }}>
-            RATE:
-          </span>
-          {[
-            { label: '3s', ms: 3000 },
-            { label: '5s', ms: 5000 },
-            { label: '10s', ms: 10000 },
-            { label: '30s', ms: 30000 },
-          ].map((item) => (
-            <button
-              key={item.ms}
-              onClick={() => setPollInterval(item.ms)}
+        {/* Center / Right: Real-Life Time (when toggled on) */}
+        {showRealTime && (
+          <div
+            id="real-life-time-display"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '4px 10px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '10px',
+              fontSize: '12px',
+              fontWeight: '600',
+              color: '#ffffff',
+              fontFamily: "'Inter', monospace",
+              letterSpacing: '0.04em',
+              animation: 'fadeIn 0.2s ease',
+            }}
+          >
+            <span style={{ fontSize: '11px', color: 'var(--green)' }}>🕒</span>
+            <span>{currentTime}</span>
+          </div>
+        )}
+
+        {/* Right: Customization Setting Gear Icon Button */}
+        <div style={{ position: 'relative' }} ref={settingsRef}>
+          <button
+            id="settings-btn"
+            onClick={() => setSettingsOpen((prev) => !prev)}
+            title="Customize digit colors & clock"
+            aria-label="Customize settings"
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: '10px',
+              background: settingsOpen ? 'rgba(37,211,102,0.18)' : 'rgba(255,255,255,0.06)',
+              border: settingsOpen ? '1px solid var(--green)' : '1px solid rgba(255,255,255,0.12)',
+              color: settingsOpen ? 'var(--green)' : 'var(--text-secondary)',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              if (!settingsOpen) {
+                e.currentTarget.style.color = '#ffffff';
+                e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!settingsOpen) {
+                e.currentTarget.style.color = 'var(--text-secondary)';
+                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+              }
+            }}
+          >
+            <svg
+              width="17"
+              height="17"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               style={{
-                background: pollInterval === item.ms ? 'var(--green)' : 'rgba(255,255,255,0.06)',
-                color: pollInterval === item.ms ? '#000000' : 'var(--text-secondary)',
-                fontWeight: pollInterval === item.ms ? '800' : '600',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '5px 9px',
-                fontSize: '11px',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
+                transform: settingsOpen ? 'rotate(45deg)' : 'rotate(0deg)',
+                transition: 'transform 0.25s ease',
               }}
             >
-              {item.label}
-            </button>
-          ))}
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+
+          {/* Simple Settings Popover: 10 Colors & Real-Life Time Toggle */}
+          {settingsOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '46px',
+                right: '0',
+                width: '260px',
+                background: 'rgba(15, 18, 26, 0.96)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '16px',
+                padding: '14px',
+                boxShadow: '0 16px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(37, 211, 102, 0.2)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                zIndex: 50,
+                animation: 'popIn 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            >
+              {/* Header */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: '12px',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    color: 'var(--text-secondary)',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  DIGIT COLOR (10 COLORS)
+                </span>
+                <button
+                  onClick={() => setSettingsOpen(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    padding: '2px 4px',
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* 10 Colors Swatches Grid (5 x 2) */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(5, 1fr)',
+                  gap: '8px',
+                  marginBottom: '14px',
+                }}
+              >
+                {DIGIT_COLORS.map((col) => {
+                  const isSelected = digitColor.toLowerCase() === col.hex.toLowerCase();
+                  return (
+                    <button
+                      key={col.hex}
+                      onClick={() => handleColorChange(col.hex)}
+                      title={col.name}
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '50%',
+                        background: col.hex,
+                        border: isSelected ? '2.5px solid #ffffff' : '2px solid rgba(255,255,255,0.15)',
+                        outline: isSelected ? '2px solid var(--green)' : 'none',
+                        outlineOffset: '2px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                        boxShadow: isSelected ? `0 0 12px ${col.hex}` : '0 2px 6px rgba(0,0,0,0.3)',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      {isSelected && (
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke={col.hex === '#ffffff' ? '#000000' : '#ffffff'}
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Divider */}
+              <div
+                style={{
+                  height: '1px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  margin: '10px 0',
+                }}
+              />
+
+              {/* Show Real-Life Time Toggle */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '4px 0',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '13px' }}>🕒</span>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#ffffff' }}>
+                    Show Real-Life Time
+                  </span>
+                </div>
+
+                <button
+                  id="toggle-real-time-btn"
+                  onClick={handleToggleRealTime}
+                  aria-pressed={showRealTime}
+                  title="Toggle real-life clock display in bottom bar"
+                  style={{
+                    width: '40px',
+                    height: '22px',
+                    borderRadius: '999px',
+                    background: showRealTime ? 'var(--green)' : 'rgba(255, 255, 255, 0.18)',
+                    border: 'none',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    transition: 'background 0.2s ease',
+                  }}
+                >
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: '2px',
+                      left: showRealTime ? '20px' : '2px',
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      background: '#ffffff',
+                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+                      transition: 'left 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                    }}
+                  />
+                </button>
+              </div>
+
+              {/* Divider */}
+              <div
+                style={{
+                  height: '1px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  margin: '10px 0',
+                }}
+              />
+
+              {/* Footer: Reset to Default */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={handleResetSettings}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    fontSize: '11px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    padding: '2px 4px',
+                    transition: 'color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+                >
+                  Reset to default
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -378,8 +733,12 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
           50% { opacity: 0.3; transform: scale(0.8); }
         }
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-4px); }
+          from { opacity: 0; transform: translateY(-3px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes popIn {
+          from { opacity: 0; transform: scale(0.92) translateY(8px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}</style>
     </div>

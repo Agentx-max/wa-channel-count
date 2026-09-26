@@ -6,11 +6,12 @@ interface OdometerCounterProps {
   value: number;
   fontSize?: string;
   duration?: number; // Animation duration in ms
+  digitColor?: string;
 }
 
 const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-function DigitColumn({ digit }: { digit: number }) {
+function DigitColumn({ digit, digitColor }: { digit: number; digitColor?: string }) {
   return (
     <span
       className="digit-col"
@@ -52,7 +53,7 @@ function DigitColumn({ digit }: { digit: number }) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--text-primary)',
+              color: digitColor || 'var(--text-primary)',
               background: 'transparent',
               backgroundColor: 'transparent',
             }}
@@ -69,6 +70,7 @@ export default function OdometerCounter({
   value,
   fontSize = '72px',
   duration = 1500,
+  digitColor = '#ffffff',
 }: OdometerCounterProps) {
   const [displayValue, setDisplayValue] = useState<number>(value);
   const animRef = useRef<number | null>(null);
@@ -135,11 +137,15 @@ export default function OdometerCounter({
         fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
         letterSpacing: '-0.03em',
         lineHeight: 1,
-        color: 'var(--text-primary)',
+        color: digitColor || 'var(--text-primary)',
         userSelect: 'none',
-        textShadow: '0 0 30px rgba(37, 211, 102, 0.25)',
+        textShadow:
+          digitColor && digitColor !== '#ffffff'
+            ? `0 0 24px ${digitColor}60, 0 0 45px ${digitColor}30`
+            : '0 0 30px rgba(37, 211, 102, 0.25)',
         maxWidth: '100%',
         overflow: 'hidden',
+        transition: 'color 0.25s ease, text-shadow 0.25s ease',
       }}
     >
       {chars.map((char, index) => {
@@ -150,8 +156,9 @@ export default function OdometerCounter({
               style={{
                 display: 'inline-block',
                 margin: '0 2px',
-                color: 'var(--green)',
-                opacity: 0.8,
+                color: digitColor || 'var(--green)',
+                opacity: 0.85,
+                transition: 'color 0.25s ease',
               }}
             >
               ,
@@ -161,7 +168,11 @@ export default function OdometerCounter({
 
         const digit = parseInt(char, 10);
         return (
-          <DigitColumn key={`digit-${chars.length - index}`} digit={digit} />
+          <DigitColumn
+            key={`digit-${chars.length - index}`}
+            digit={digit}
+            digitColor={digitColor}
+          />
         );
       })}
     </div>
