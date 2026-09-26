@@ -126,6 +126,11 @@ export default function OdometerCounter({
         ? 'clamp(32px, 6.5vw, 56px)'
         : 'clamp(44px, 8.5vw, 76px)';
 
+  const dropShadowFilter =
+    digitColor && digitColor !== '#ffffff'
+      ? `drop-shadow(0 0 16px ${digitColor}80)`
+      : 'drop-shadow(0 0 16px rgba(37, 211, 102, 0.35))';
+
   return (
     <div
       style={{
@@ -139,13 +144,11 @@ export default function OdometerCounter({
         lineHeight: 1,
         color: digitColor || 'var(--text-primary)',
         userSelect: 'none',
-        textShadow:
-          digitColor && digitColor !== '#ffffff'
-            ? `0 0 24px ${digitColor}60, 0 0 45px ${digitColor}30`
-            : '0 0 30px rgba(37, 211, 102, 0.25)',
+        textShadow: 'none',
+        filter: dropShadowFilter,
         maxWidth: '100%',
         overflow: 'hidden',
-        transition: 'color 0.25s ease, text-shadow 0.25s ease',
+        transition: 'color 0.25s ease, filter 0.25s ease',
       }}
     >
       {chars.map((char, index) => {

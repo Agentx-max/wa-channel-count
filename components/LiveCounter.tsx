@@ -471,7 +471,7 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
           position: 'relative',
         }}
       >
-        {/* Left: LIVE Badge & Last Updated */}
+        {/* Left: LIVE Badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div
             style={{
@@ -505,18 +505,6 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
               LIVE
             </span>
           </div>
-
-          <span
-            style={{
-              fontSize: '12px',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-            }}
-            onClick={triggerManualRefresh}
-            title="Click to refresh now"
-          >
-            {refreshing ? 'Updating…' : `${formatSecondsAgo(secondsAgo)}`}
-          </span>
         </div>
 
         {/* Center / Right: Real-Life Time (when toggled on) */}

@@ -102,10 +102,12 @@ button:active {
   }
 }
 
-/* Ensure Odometer digits have zero solid box background */
-.digit-col, .digit-span {
+/* Ensure Odometer digits have zero solid box background or rectangular clipping artifacts */
+.digit-col, .digit-span, .digit-span span {
   background: transparent !important;
   background-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
 /* Responsive utilities */
