@@ -4,28 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import type { ChannelData } from '@/lib/types';
 import { formatFollowerCount } from '@/lib/channel';
 import OdometerCounter from './OdometerCounter';
-import CounterCustomizerModal from './CounterCustomizerModal';
-import {
-  CounterCustomization,
-  DEFAULT_CUSTOMIZATION,
-  loadSavedCustomization,
-  saveCustomizationToStorage,
-  getFontFamilyCSS,
-  playTickSound,
-} from '@/lib/customization';
 
 interface LiveCounterProps {
   channel: ChannelData;
   channelUrl: string;
   onReset: () => void;
 }
-
-const SIZE_SCALE_MAP: Record<CounterCustomization['sizeScale'], number> = {
-  compact: 0.85,
-  normal: 1,
-  large: 1.15,
-  mega: 1.3,
-};
 
 export default function LiveCounter({ channel: initialChannel, channelUrl, onReset }: LiveCounterProps) {
   const [channel, setChannel] = useState<ChannelData>(initialChannel);
@@ -35,38 +19,14 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
   const [secondsAgo, setSecondsAgo] = useState(0);
   const [prevCount, setPrevCount] = useState<number | null>(null);
   const [countChanged, setCountChanged] = useState(false);
+  const [pollInterval, setPollInterval] = useState<number>(5000); // 5 sec default for smooth live feel
   const [imgError, setImgError] = useState(false);
-
-  // Customization state
-  const [customization, setCustomization] = useState<CounterCustomization>(DEFAULT_CUSTOMIZATION);
-  const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const clockRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Load customizations from localStorage on client mount
-  useEffect(() => {
-    const saved = loadSavedCustomization();
-    setCustomization(saved);
-  }, []);
-
-  const handleCustomizationChange = (updated: CounterCustomization) => {
-    setCustomization(updated);
-    saveCustomizationToStorage(updated);
-  };
-
-  const handleResetCustomization = () => {
-    setCustomization(DEFAULT_CUSTOMIZATION);
-    saveCustomizationToStorage(DEFAULT_CUSTOMIZATION);
-  };
-
   // Periodic polling for live subscriber updates
   useEffect(() => {
-    if (!customization.autoRefreshEnabled) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      return;
-    }
-
     async function refresh() {
       setRefreshing(true);
       try {
@@ -81,9 +41,6 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
           if (newCount !== channel.followers) {
             setPrevCount(channel.followers);
             setCountChanged(true);
-            if (customization.soundEnabled) {
-              playTickSound();
-            }
             setTimeout(() => setCountChanged(false), 1200);
           }
           setChannel(data.channel);
@@ -100,12 +57,12 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
       }
     }
 
-    intervalRef.current = setInterval(refresh, customization.pollIntervalMs);
+    intervalRef.current = setInterval(refresh, pollInterval);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channelUrl, channel.followers, customization.pollIntervalMs, customization.autoRefreshEnabled, customization.soundEnabled]);
+  }, [channelUrl, channel.followers, pollInterval]);
 
   // Clock: "Updated X seconds ago"
   useEffect(() => {
@@ -134,15 +91,6 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
       );
       const data = await res.json();
       if (data.success) {
-        const newCount = data.channel.followers;
-        if (newCount !== channel.followers) {
-          setPrevCount(channel.followers);
-          setCountChanged(true);
-          if (customization.soundEnabled) {
-            playTickSound();
-          }
-          setTimeout(() => setCountChanged(false), 1200);
-        }
         setChannel(data.channel);
         setLastUpdated(new Date());
         setRefreshError(null);
@@ -155,26 +103,8 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
     }
   };
 
-  // Timestamp display string based on user customization
-  const renderTimestampText = () => {
-    if (refreshing) return 'Updating…';
-    if (refreshError) return refreshError;
-
-    switch (customization.timestampFormat) {
-      case 'exact':
-        return lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      case 'both':
-        return `${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} (${formatSecondsAgo(secondsAgo)})`;
-      case 'hidden':
-        return '';
-      case 'relative':
-      default:
-        return formatSecondsAgo(secondsAgo);
-    }
-  };
-
   return (
-    <div style={{ width: '100%', position: 'relative' }}>
+    <div style={{ width: '100%' }}>
       {/* Header with Channel Info */}
       <div
         style={{
@@ -302,7 +232,7 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
         }}
       />
 
-      {/* Follower Odometer Display Container */}
+      {/* Follower Odometer Display */}
       <div style={{ textAlign: 'center', marginBottom: '24px', width: '100%', overflow: 'hidden' }}>
         <div
           id="follower-count"
@@ -314,19 +244,7 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
             justifyContent: 'center',
           }}
         >
-          <OdometerCounter
-            value={channel.followers}
-            fontSize="clamp(36px, 11vw, 84px)"
-            digitColor={customization.digitColor}
-            glowColor={customization.glowColor}
-            glowIntensity={customization.glowIntensity}
-            isGradient={customization.isGradient}
-            fontFamily={getFontFamilyCSS(customization.fontFamily)}
-            sizeMultiplier={SIZE_SCALE_MAP[customization.sizeScale] || 1}
-            duration={customization.animDurationMs}
-            separatorType={customization.separatorType}
-            separatorColor={customization.separatorColor}
-          />
+          <OdometerCounter value={channel.followers} fontSize="clamp(36px, 11vw, 84px)" />
         </div>
 
         <p
@@ -343,7 +261,7 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
         </p>
 
         {/* Dynamic Delta Indicator */}
-        {customization.showDeltaIndicator && countChanged && prevCount !== null && (
+        {countChanged && prevCount !== null && (
           <p
             style={{
               fontSize: '13px',
@@ -360,7 +278,7 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
         )}
       </div>
 
-      {/* Live Status & Speed Controls (Bottom Container Bar with Customize Button at Right Bottom) */}
+      {/* Live Status & Speed Controls */}
       <div
         style={{
           display: 'flex',
@@ -374,24 +292,17 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
           padding: '12px 16px',
         }}
       >
-        {/* Left Side: LIVE Badge & Timestamp Display */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+        {/* LIVE Badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               padding: '4px 10px',
-              background: customization.autoRefreshEnabled
-                ? 'rgba(37,211,102,0.12)'
-                : 'rgba(255,255,255,0.06)',
-              border: `1px solid ${
-                customization.autoRefreshEnabled
-                  ? 'rgba(37,211,102,0.3)'
-                  : 'rgba(255,255,255,0.1)'
-              }`,
+              background: 'rgba(37,211,102,0.12)',
+              border: '1px solid rgba(37,211,102,0.3)',
               borderRadius: '999px',
-              flexShrink: 0,
             }}
           >
             <span
@@ -399,149 +310,67 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
                 width: '7px',
                 height: '7px',
                 borderRadius: '50%',
-                background: customization.autoRefreshEnabled ? 'var(--green)' : 'var(--text-muted)',
+                background: 'var(--green)',
                 display: 'inline-block',
-                animation: customization.autoRefreshEnabled ? 'pulse 1.5s ease-in-out infinite' : 'none',
+                animation: 'pulse 1.5s ease-in-out infinite',
               }}
             />
             <span
               style={{
                 fontSize: '11px',
                 fontWeight: '800',
-                color: customization.autoRefreshEnabled ? 'var(--green)' : 'var(--text-muted)',
+                color: 'var(--green)',
                 letterSpacing: '0.1em',
               }}
             >
-              {customization.autoRefreshEnabled ? 'LIVE' : 'PAUSED'}
+              LIVE
             </span>
           </div>
 
-          {/* Timestamp text */}
-          {customization.timestampFormat !== 'hidden' && (
-            <span
-              style={{
-                fontSize: '12px',
-                color: 'var(--text-muted)',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-              onClick={triggerManualRefresh}
-              title="Click to refresh follower count now"
-            >
-              {renderTimestampText()}
-            </span>
-          )}
+          <span
+            style={{
+              fontSize: '12px',
+              color: 'var(--text-muted)',
+              cursor: 'pointer',
+            }}
+            onClick={triggerManualRefresh}
+            title="Click to refresh now"
+          >
+            {refreshing ? 'Updating…' : `${formatSecondsAgo(secondsAgo)}`}
+          </span>
         </div>
 
-        {/* Right Bottom: Refresh Rate Indicator & Customize Icon Button */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            flexShrink: 0,
-            marginLeft: 'auto',
-          }}
-        >
-          {/* Quick Rate Indicator */}
-          <button
-            onClick={() => setIsCustomizerOpen(true)}
-            title="Click to change refresh rate & timestamps"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              background: 'rgba(255,255,255,0.05)',
-              border: '1px solid rgba(255,255,255,0.08)',
-              borderRadius: '8px',
-              padding: '5px 8px',
-              fontSize: '11px',
-              fontWeight: '700',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#ffffff';
-              e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = 'var(--text-secondary)';
-              e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-            }}
-          >
-            <span>⏱️</span>
-            <span>{customization.pollIntervalMs / 1000}s</span>
-          </button>
-
-          {/* Customize Icon Button in right bottom */}
-          <button
-            id="customize-counter-btn"
-            onClick={() => setIsCustomizerOpen(true)}
-            title="Customize digit colors, refresh rate timestamps & styles"
-            aria-label="Customize live counter"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'linear-gradient(135deg, rgba(37,211,102,0.16) 0%, rgba(18,140,126,0.22) 100%)',
-              border: '1px solid rgba(37,211,102,0.4)',
-              borderRadius: '10px',
-              padding: '6px 12px',
-              color: '#ffffff',
-              fontSize: '12px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-              boxShadow: '0 2px 10px rgba(37,211,102,0.18)',
-              whiteSpace: 'nowrap',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px) scale(1.02)';
-              e.currentTarget.style.borderColor = 'rgba(37,211,102,0.8)';
-              e.currentTarget.style.boxShadow = '0 4px 16px rgba(37,211,102,0.35)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              e.currentTarget.style.borderColor = 'rgba(37,211,102,0.4)';
-              e.currentTarget.style.boxShadow = '0 2px 10px rgba(37,211,102,0.18)';
-            }}
-          >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              style={{ color: 'var(--green)' }}
+        {/* Polling Interval Selectors */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', marginRight: '2px' }}>
+            RATE:
+          </span>
+          {[
+            { label: '3s', ms: 3000 },
+            { label: '5s', ms: 5000 },
+            { label: '10s', ms: 10000 },
+            { label: '30s', ms: 30000 },
+          ].map((item) => (
+            <button
+              key={item.ms}
+              onClick={() => setPollInterval(item.ms)}
+              style={{
+                background: pollInterval === item.ms ? 'var(--green)' : 'rgba(255,255,255,0.06)',
+                color: pollInterval === item.ms ? '#000000' : 'var(--text-secondary)',
+                fontWeight: pollInterval === item.ms ? '800' : '600',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '5px 9px',
+                fontSize: '11px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
             >
-              <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z" />
-              <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
-              <path d="M12 2v2" />
-              <path d="M12 20v2" />
-              <path d="m4.93 4.93 1.41 1.41" />
-              <path d="m17.66 17.66 1.41 1.41" />
-              <path d="M2 12h2" />
-              <path d="M20 12h2" />
-            </svg>
-            <span>Customize</span>
-          </button>
+              {item.label}
+            </button>
+          ))}
         </div>
       </div>
-
-      {/* Customizer Studio Modal */}
-      <CounterCustomizerModal
-        isOpen={isCustomizerOpen}
-        onClose={() => setIsCustomizerOpen(false)}
-        customization={customization}
-        onChange={handleCustomizationChange}
-        onReset={handleResetCustomization}
-      />
 
       <style>{`
         @keyframes pulse {
