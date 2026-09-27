@@ -47,6 +47,7 @@ export type ErrorCode =
   | 'WA_BAILEYS_ERROR'
   | 'NETWORK_TIMEOUT'
   | 'RATE_LIMITED'
+  | 'INVALID_CAPTCHA'
   | 'INTERNAL_ERROR';
 
 /** Current WhatsApp connection status */

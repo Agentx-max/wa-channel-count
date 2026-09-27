@@ -11,14 +11,15 @@ export default function ChannelCard() {
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
 
-  async function handleSubmit(url: string) {
+  async function handleSubmit(url: string, token: string) {
     setIsLoading(true);
     setApiError(null);
 
     try {
-      const res = await fetch(`/api/channel?url=${encodeURIComponent(url)}`, {
-        cache: 'no-store',
-      });
+      const res = await fetch(
+        `/api/channel?url=${encodeURIComponent(url)}&token=${encodeURIComponent(token)}`,
+        { cache: 'no-store' }
+      );
       const data: ApiResponse = await res.json();
 
       if (data.success) {
