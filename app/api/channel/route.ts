@@ -39,7 +39,7 @@ async function verifyTurnstileToken(token: string, remoteIp: string): Promise<bo
 export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   // ── Rate limiting ───────────────────────────────────────────────────────
   const ip = getClientIp(request);
-  if (!checkRateLimit(ip)) {
+  if (!checkRateLimit(ip, 120, 60_000)) {
     return NextResponse.json(
       {
         success: false,

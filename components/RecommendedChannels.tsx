@@ -318,55 +318,97 @@ export default function RecommendedChannels() {
   useEffect(() => {
     let cancelled = false;
 
-    const fetchAll = async () => {
-      const results = await Promise.allSettled(
-        RAW_CHANNELS.map(async (ch) => {
-          const res = await fetch(`/api/channel?url=${encodeURIComponent(ch.url)}`);
-          if (!res.ok) return { inviteCode: ch.inviteCode, count: null, picture: null, verified: false };
-          const data = await res.json();
-          if (data.success && data.channel) {
-            return {
-              inviteCode: ch.inviteCode,
-              count: data.channel.followers as number,
-              picture: data.channel.picture as string | null,
-              verified: Boolean(data.channel.verified),
-            };
+    // Helper: fetch single channel with retry & backoff
+    async function fetchChannelData(ch: ChannelEntry, maxRetries = 3) {
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        if (cancelled) return null;
+        try {
+          const res = await fetch(`/api/channel?url=${encodeURIComponent(ch.url)}`, {
+            cache: 'no-store',
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.channel) {
+              return {
+                inviteCode: ch.inviteCode,
+                count: data.channel.followers as number,
+                picture: data.channel.picture as string | null,
+                verified: Boolean(data.channel.verified),
+              };
+            }
           }
-          return { inviteCode: ch.inviteCode, count: null, picture: null, verified: false };
-        })
-      );
 
-      if (cancelled) return;
-
-      setChannels((prev) => {
-        const updated = prev.map((ch) => {
-          const match = results.find(
-            (r) => r.status === 'fulfilled' && r.value.inviteCode === ch.inviteCode
-          );
-          if (match && match.status === 'fulfilled') {
-            return {
-              ...ch,
-              count: match.value.count,
-              picture: match.value.picture,
-              verified: match.value.verified,
-              loading: false,
-            };
+          // If rate limited or server temporarily busy, wait before retry
+          if (attempt < maxRetries - 1) {
+            await new Promise((resolve) => setTimeout(resolve, (attempt + 1) * 800));
           }
-          return { ...ch, loading: false };
-        });
+        } catch {
+          if (attempt < maxRetries - 1) {
+            await new Promise((resolve) => setTimeout(resolve, (attempt + 1) * 800));
+          }
+        }
+      }
+      return null;
+    }
 
-        return [...updated].sort((a, b) => {
-          if (a.count === null && b.count === null) return 0;
-          if (a.count === null) return 1;
-          if (b.count === null) return -1;
-          return b.count - a.count;
+    const loadChannels = async () => {
+      // Process channels in small staggered sequence (2 at a time, spaced 150ms apart)
+      for (let i = 0; i < RAW_CHANNELS.length; i++) {
+        if (cancelled) break;
+        const ch = RAW_CHANNELS[i];
+
+        // Slight stagger between starts to prevent simultaneous burst
+        if (i > 0 && i % 2 === 0) {
+          await new Promise((resolve) => setTimeout(resolve, 150));
+        }
+
+        // Fire fetch in background so channels update dynamically as they load
+        fetchChannelData(ch).then((result) => {
+          if (cancelled) return;
+          setChannels((prev) => {
+            const updated = prev.map((item) => {
+              if (item.inviteCode === ch.inviteCode) {
+                if (result) {
+                  return {
+                    ...item,
+                    count: result.count,
+                    picture: result.picture,
+                    verified: result.verified,
+                    loading: false,
+                  };
+                } else {
+                  return {
+                    ...item,
+                    loading: false, // Retain existing count if fetch failed
+                  };
+                }
+              }
+              return item;
+            });
+
+            // Sort channels by count descending (unloaded / null count at bottom)
+            return [...updated].sort((a, b) => {
+              if (a.count === null && b.count === null) return 0;
+              if (a.count === null) return 1;
+              if (b.count === null) return -1;
+              return b.count - a.count;
+            });
+          });
         });
-      });
+      }
     };
 
-    fetchAll();
+    loadChannels();
+
+    // Auto refresh recommended list every 30 seconds
+    const interval = setInterval(() => {
+      if (!cancelled) loadChannels();
+    }, 30000);
+
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
   }, []);
 

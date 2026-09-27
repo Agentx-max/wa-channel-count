@@ -27,7 +27,7 @@ if (typeof setInterval !== 'undefined') {
  */
 export function checkRateLimit(
   ip: string,
-  maxRequests = 12,
+  maxRequests = 120,
   windowMs = 60_000,
 ): boolean {
   const now = Date.now();
