@@ -1,8 +1,13 @@
-import Link from 'next/link';
 import ChannelCard from '@/components/ChannelCard';
 import RecommendedChannels from '@/components/RecommendedChannels';
 
-export default function Home() {
+interface HomeProps {
+  searchParams: Promise<{ url?: string }>;
+}
+
+export default async function Home({ searchParams }: HomeProps) {
+  const { url: prefilledUrl } = await searchParams;
+
   return (
     <main
       style={{
@@ -119,7 +124,7 @@ export default function Home() {
         </header>
 
         {/* Main card */}
-        <ChannelCard />
+        <ChannelCard initialUrl={prefilledUrl} />
 
         {/* Recommended Channels */}
         <RecommendedChannels />

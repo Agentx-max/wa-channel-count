@@ -24,7 +24,7 @@ const DIGIT_COLORS = [
   { name: 'Sky Blue', hex: '#38BDF8' },
 ];
 
-const POLL_INTERVAL = 10000; // Locked to 10 seconds (hidden from users)
+const POLL_INTERVAL = 6000; // 6 seconds refresh rate
 
 export default function LiveCounter({ channel: initialChannel, channelUrl, onReset }: LiveCounterProps) {
   const [channel, setChannel] = useState<ChannelData>(initialChannel);
@@ -41,6 +41,7 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
   const [showRealTime, setShowRealTime] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<string>('');
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  const [shareTooltip, setShareTooltip] = useState(false);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const clockRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -94,6 +95,41 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
     }
   };
 
+  // Share channel link
+  const handleShare = async () => {
+    // Extract invite code from URL
+    const match = channelUrl.match(/channel\/([A-Za-z0-9_-]+)/);
+    const code = match ? match[1] : '';
+    const shareUrl = `${window.location.origin}/channel/${code}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${channel.name} — Live Follower Count`,
+          text: `Check out ${channel.name}'s live WhatsApp channel follower count!`,
+          url: shareUrl,
+        });
+        return;
+      } catch {
+        // User cancelled or share failed, fall through to clipboard
+      }
+    }
+
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = shareUrl;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    setShareTooltip(true);
+    setTimeout(() => setShareTooltip(false), 2000);
+  };
+
   // Ticking real-life clock
   useEffect(() => {
     const updateClock = () => {
@@ -126,7 +162,7 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
     };
   }, [settingsOpen]);
 
-  // Periodic polling for live subscriber updates locked to 10 seconds
+  // Periodic polling for live subscriber updates at 6 seconds
   useEffect(() => {
     async function refresh() {
       setRefreshing(true);
@@ -354,23 +390,23 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
         )}
       </div>
 
-      {/* Bottom Container Bar: LIVE Status, Real-Life Time Display & Settings Icon */}
+      {/* Bottom Container Bar: LIVE Status, Real-Life Time Display, Share & Settings */}
       <div
+        className="live-counter-bottom-bar"
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '12px',
-          flexWrap: 'wrap',
+          gap: '8px',
           background: 'rgba(0,0,0,0.3)',
           border: '1px solid rgba(255,255,255,0.08)',
           borderRadius: '16px',
-          padding: '12px 16px',
+          padding: '10px 12px',
           position: 'relative',
         }}
       >
-        {/* Left: LIVE Badge Only (no timestamp numbers text) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Left: LIVE Badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           <div
             style={{
               display: 'flex',
@@ -405,284 +441,368 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
           </div>
         </div>
 
-        {/* Center / Right: Real-Life Time (when toggled on) */}
+        {/* Center: Real-Life Time (when toggled on) */}
         {showRealTime && (
           <div
             id="real-life-time-display"
+            className="mobile-time-display"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '6px',
-              padding: '4px 10px',
+              gap: '5px',
+              padding: '4px 8px',
               background: 'rgba(255, 255, 255, 0.05)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '10px',
-              fontSize: '12px',
+              fontSize: '11px',
               fontWeight: '600',
               color: '#ffffff',
               fontFamily: "'Inter', monospace",
               letterSpacing: '0.04em',
               animation: 'fadeIn 0.2s ease',
+              whiteSpace: 'nowrap',
+              flexShrink: 1,
+              minWidth: 0,
+              overflow: 'hidden',
             }}
           >
-            <span style={{ fontSize: '11px', color: 'var(--green)' }}>🕒</span>
+            <span style={{ fontSize: '10px', color: 'var(--green)' }}>🕒</span>
             <span>{currentTime}</span>
           </div>
         )}
 
-        {/* Right: Customization Setting Gear Icon Button */}
-        <div style={{ position: 'relative' }} ref={settingsRef}>
-          <button
-            id="settings-btn"
-            onClick={() => setSettingsOpen((prev) => !prev)}
-            title="Customize digit colors & clock"
-            aria-label="Customize settings"
-            style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '10px',
-              background: settingsOpen ? 'rgba(37,211,102,0.18)' : 'rgba(255,255,255,0.06)',
-              border: settingsOpen ? '1px solid var(--green)' : '1px solid rgba(255,255,255,0.12)',
-              color: settingsOpen ? 'var(--green)' : 'var(--text-secondary)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              if (!settingsOpen) {
-                e.currentTarget.style.color = '#ffffff';
-                e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)';
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!settingsOpen) {
-                e.currentTarget.style.color = 'var(--text-secondary)';
-                e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
-              }
-            }}
-          >
-            <svg
-              width="17"
-              height="17"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+        {/* Right: Share + Settings buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          {/* Share Button */}
+          <div style={{ position: 'relative' }}>
+            <button
+              id="share-btn"
+              onClick={handleShare}
+              title="Share this channel's live counter"
+              aria-label="Share channel"
               style={{
-                transform: settingsOpen ? 'rotate(45deg)' : 'rotate(0deg)',
-                transition: 'transform 0.25s ease',
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                background: shareTooltip ? 'rgba(37,211,102,0.18)' : 'rgba(255,255,255,0.06)',
+                border: shareTooltip ? '1px solid var(--green)' : '1px solid rgba(255,255,255,0.12)',
+                color: shareTooltip ? 'var(--green)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!shareTooltip) {
+                  e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!shareTooltip) {
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+                }
               }}
             >
-              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-              <circle cx="12" cy="12" r="3" />
-            </svg>
-          </button>
+              {shareTooltip ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3" />
+                  <circle cx="6" cy="12" r="3" />
+                  <circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+              )}
+            </button>
 
-          {/* Simple Settings Popover: 10 Colors & Real-Life Time Toggle */}
-          {settingsOpen && (
-            <div
+            {/* "Copied!" tooltip */}
+            {shareTooltip && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '44px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  padding: '4px 10px',
+                  background: 'rgba(15, 18, 26, 0.95)',
+                  border: '1px solid rgba(37,211,102,0.3)',
+                  borderRadius: '8px',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: 'var(--green)',
+                  whiteSpace: 'nowrap',
+                  animation: 'fadeIn 0.15s ease',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                  zIndex: 50,
+                }}
+              >
+                Link copied!
+              </div>
+            )}
+          </div>
+
+          {/* Settings Button */}
+          <div style={{ position: 'relative' }} ref={settingsRef}>
+            <button
+              id="settings-btn"
+              onClick={() => setSettingsOpen((prev) => !prev)}
+              title="Customize digit colors & clock"
+              aria-label="Customize settings"
               style={{
-                position: 'absolute',
-                bottom: '46px',
-                right: '0',
-                width: '260px',
-                background: 'rgba(15, 18, 26, 0.96)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '16px',
-                padding: '14px',
-                boxShadow: '0 16px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(37, 211, 102, 0.2)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                zIndex: 50,
-                animation: 'popIn 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                background: settingsOpen ? 'rgba(37,211,102,0.18)' : 'rgba(255,255,255,0.06)',
+                border: settingsOpen ? '1px solid var(--green)' : '1px solid rgba(255,255,255,0.12)',
+                color: settingsOpen ? 'var(--green)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!settingsOpen) {
+                  e.currentTarget.style.color = '#ffffff';
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!settingsOpen) {
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.12)';
+                }
               }}
             >
-              {/* Header */}
-              <div
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '12px',
+                  transform: settingsOpen ? 'rotate(45deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.25s ease',
                 }}
               >
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '700',
-                    color: 'var(--text-secondary)',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  DIGIT COLOR (10 COLORS)
-                </span>
-                <button
-                  onClick={() => setSettingsOpen(false)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-muted)',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    padding: '2px 4px',
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
 
-              {/* 10 Colors Swatches Grid (5 x 2) */}
+            {/* Simple Settings Popover: 10 Colors & Real-Life Time Toggle */}
+            {settingsOpen && (
               <div
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(5, 1fr)',
-                  gap: '8px',
-                  marginBottom: '14px',
+                  position: 'absolute',
+                  bottom: '46px',
+                  right: '0',
+                  width: '260px',
+                  background: 'rgba(15, 18, 26, 0.96)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '16px',
+                  padding: '14px',
+                  boxShadow: '0 16px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(37, 211, 102, 0.2)',
+                  backdropFilter: 'blur(20px)',
+                  WebkitBackdropFilter: 'blur(20px)',
+                  zIndex: 50,
+                  animation: 'popIn 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
                 }}
               >
-                {DIGIT_COLORS.map((col) => {
-                  const isSelected = digitColor.toLowerCase() === col.hex.toLowerCase();
-                  return (
-                    <button
-                      key={col.hex}
-                      onClick={() => handleColorChange(col.hex)}
-                      title={col.name}
-                      style={{
-                        width: '38px',
-                        height: '38px',
-                        borderRadius: '50%',
-                        background: col.hex,
-                        border: isSelected ? '2.5px solid #ffffff' : '2px solid rgba(255,255,255,0.15)',
-                        outline: isSelected ? '2px solid var(--green)' : 'none',
-                        outlineOffset: '2px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-                        boxShadow: isSelected ? `0 0 12px ${col.hex}` : '0 2px 6px rgba(0,0,0,0.3)',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'scale(1.15)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'scale(1)';
-                      }}
-                    >
-                      {isSelected && (
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke={col.hex === '#ffffff' ? '#000000' : '#ffffff'}
-                          strokeWidth="3.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Divider */}
-              <div
-                style={{
-                  height: '1px',
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  margin: '10px 0',
-                }}
-              />
-
-              {/* Show Real-Life Time Toggle */}
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '4px 0',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ fontSize: '13px' }}>🕒</span>
-                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#ffffff' }}>
-                    Show Real-Life Time
-                  </span>
-                </div>
-
-                <button
-                  id="toggle-real-time-btn"
-                  onClick={handleToggleRealTime}
-                  aria-pressed={showRealTime}
-                  title="Toggle real-life clock display in bottom bar"
+                {/* Header */}
+                <div
                   style={{
-                    width: '40px',
-                    height: '22px',
-                    borderRadius: '999px',
-                    background: showRealTime ? 'var(--green)' : 'rgba(255, 255, 255, 0.18)',
-                    border: 'none',
-                    position: 'relative',
-                    cursor: 'pointer',
-                    transition: 'background 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '12px',
                   }}
                 >
                   <span
                     style={{
-                      position: 'absolute',
-                      top: '2px',
-                      left: showRealTime ? '20px' : '2px',
-                      width: '18px',
-                      height: '18px',
-                      borderRadius: '50%',
-                      background: '#ffffff',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
-                      transition: 'left 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                      fontSize: '11px',
+                      fontWeight: '700',
+                      color: 'var(--text-secondary)',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
                     }}
-                  />
-                </button>
-              </div>
+                  >
+                    DIGIT COLOR (10 COLORS)
+                  </span>
+                  <button
+                    onClick={() => setSettingsOpen(false)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      padding: '2px 4px',
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
 
-              {/* Divider */}
-              <div
-                style={{
-                  height: '1px',
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  margin: '10px 0',
-                }}
-              />
-
-              {/* Footer: Reset to Default */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  onClick={handleResetSettings}
+                {/* 10 Colors Swatches Grid (5 x 2) */}
+                <div
                   style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-muted)',
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    padding: '2px 4px',
-                    transition: 'color 0.15s ease',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(5, 1fr)',
+                    gap: '8px',
+                    marginBottom: '14px',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                 >
-                  Reset to default
-                </button>
+                  {DIGIT_COLORS.map((col) => {
+                    const isSelected = digitColor.toLowerCase() === col.hex.toLowerCase();
+                    return (
+                      <button
+                        key={col.hex}
+                        onClick={() => handleColorChange(col.hex)}
+                        title={col.name}
+                        style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '50%',
+                          background: col.hex,
+                          border: isSelected ? '2.5px solid #ffffff' : '2px solid rgba(255,255,255,0.15)',
+                          outline: isSelected ? '2px solid var(--green)' : 'none',
+                          outlineOffset: '2px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                          boxShadow: isSelected ? `0 0 12px ${col.hex}` : '0 2px 6px rgba(0,0,0,0.3)',
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'scale(1.15)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = 'scale(1)';
+                        }}
+                      >
+                        {isSelected && (
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke={col.hex === '#ffffff' ? '#000000' : '#ffffff'}
+                            strokeWidth="3.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Divider */}
+                <div
+                  style={{
+                    height: '1px',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    margin: '10px 0',
+                  }}
+                />
+
+                {/* Show Real-Life Time Toggle */}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '4px 0',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '13px' }}>🕒</span>
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#ffffff' }}>
+                      Show Real-Life Time
+                    </span>
+                  </div>
+
+                  <button
+                    id="toggle-real-time-btn"
+                    onClick={handleToggleRealTime}
+                    aria-pressed={showRealTime}
+                    title="Toggle real-life clock display in bottom bar"
+                    style={{
+                      width: '40px',
+                      height: '22px',
+                      borderRadius: '999px',
+                      background: showRealTime ? 'var(--green)' : 'rgba(255, 255, 255, 0.18)',
+                      border: 'none',
+                      position: 'relative',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s ease',
+                    }}
+                  >
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: '2px',
+                        left: showRealTime ? '20px' : '2px',
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        background: '#ffffff',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.3)',
+                        transition: 'left 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                      }}
+                    />
+                  </button>
+                </div>
+
+                {/* Divider */}
+                <div
+                  style={{
+                    height: '1px',
+                    background: 'rgba(255, 255, 255, 0.08)',
+                    margin: '10px 0',
+                  }}
+                />
+
+                {/* Footer: Reset to Default */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={handleResetSettings}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      padding: '2px 4px',
+                      transition: 'color 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
+                  >
+                    Reset to default
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -698,6 +818,17 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
         @keyframes popIn {
           from { opacity: 0; transform: scale(0.92) translateY(8px); }
           to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        /* Mobile-safe bottom bar: never wraps, shrinks time display */
+        @media (max-width: 400px) {
+          .live-counter-bottom-bar {
+            padding: 8px 10px !important;
+            gap: 6px !important;
+          }
+          .mobile-time-display {
+            font-size: 10px !important;
+            padding: 3px 6px !important;
+          }
         }
       `}</style>
     </div>

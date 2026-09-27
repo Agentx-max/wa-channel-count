@@ -1,15 +1,55 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ChannelData, ApiResponse } from '@/lib/types';
 import ChannelInput from '@/components/ChannelInput';
 import LiveCounter from '@/components/LiveCounter';
 
-export default function ChannelCard() {
+interface ChannelCardProps {
+  initialUrl?: string;
+}
+
+export default function ChannelCard({ initialUrl }: ChannelCardProps) {
   const [channel, setChannel] = useState<ChannelData | null>(null);
   const [channelUrl, setChannelUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+  const autoFetchedRef = useRef(false);
+
+  // Auto-fetch when arriving from a share link (/channel/CODE → /?url=...)
+  useEffect(() => {
+    if (initialUrl && !autoFetchedRef.current) {
+      autoFetchedRef.current = true;
+      handleAutoFetch(initialUrl);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUrl]);
+
+  async function handleAutoFetch(url: string) {
+    setIsLoading(true);
+    setApiError(null);
+
+    try {
+      const res = await fetch(
+        `/api/channel?url=${encodeURIComponent(url)}`,
+        { cache: 'no-store' }
+      );
+      const data: ApiResponse = await res.json();
+
+      if (data.success) {
+        setChannel(data.channel);
+        setChannelUrl(url);
+      } else {
+        setApiError(data.error);
+        setChannel(null);
+      }
+    } catch {
+      setApiError('Network error. Please check your connection and try again.');
+      setChannel(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   async function handleSubmit(url: string, token: string) {
     setIsLoading(true);
