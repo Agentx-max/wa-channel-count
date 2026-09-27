@@ -119,3 +119,56 @@ export function mapNewsletterToChannelData(meta: NewsletterMetadata): ChannelDat
 export function formatFollowerCount(count: number): string {
   return count.toLocaleString('en-US');
 }
+
+export interface MilestoneInfo {
+  target: number;
+  needed: number;
+  formattedTarget: string;
+  formattedNeeded: string;
+  progressPercent: number;
+}
+
+/**
+ * Calculate the next milestone for a channel based on its follower count.
+ * - 0 - 99: next milestone is 100
+ * - 100 - 999: next milestone is 1,000
+ * - 1,000 - 99,999: next thousand (e.g., 1300 -> 2000)
+ * - 100k - 999,999: steps of 50,000 (e.g., 100k -> 150,000)
+ * - 1M+: steps of 1,000,000 (e.g., 1M -> 2,000,000)
+ */
+export function getMilestoneInfo(count: number): MilestoneInfo {
+  const safeCount = Math.max(0, Math.floor(count));
+  let target = 100;
+  let prev = 0;
+
+  if (safeCount < 100) {
+    target = 100;
+    prev = 0;
+  } else if (safeCount < 1000) {
+    target = 1000;
+    prev = 100;
+  } else if (safeCount < 100000) {
+    target = Math.floor(safeCount / 1000) * 1000 + 1000;
+    prev = target - 1000;
+  } else if (safeCount < 1000000) {
+    target = Math.floor(safeCount / 50000) * 50000 + 50000;
+    prev = target - 50000;
+  } else {
+    target = Math.floor(safeCount / 1000000) * 1000000 + 1000000;
+    prev = target - 1000000;
+  }
+
+  const needed = Math.max(0, target - safeCount);
+  const totalSpan = target - prev;
+  const currentProgress = safeCount - prev;
+  const progressPercent = totalSpan > 0 ? Math.min(100, Math.max(0, (currentProgress / totalSpan) * 100)) : 0;
+
+  return {
+    target,
+    needed,
+    formattedTarget: formatFollowerCount(target),
+    formattedNeeded: formatFollowerCount(needed),
+    progressPercent,
+  };
+}
+

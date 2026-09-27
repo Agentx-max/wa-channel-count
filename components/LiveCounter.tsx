@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import type { ChannelData } from '@/lib/types';
-import { formatFollowerCount } from '@/lib/channel';
+import { formatFollowerCount, getMilestoneInfo } from '@/lib/channel';
 import OdometerCounter from './OdometerCounter';
 
 interface LiveCounterProps {
@@ -389,6 +389,138 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
           </p>
         )}
       </div>
+
+      {/* Next Milestone Card */}
+      {(() => {
+        const milestone = getMilestoneInfo(channel.followers);
+        return (
+          <div
+            id="channel-milestone-card"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(37, 211, 102, 0.06) 100%)',
+              border: '1px solid rgba(37, 211, 102, 0.2)',
+              borderRadius: '16px',
+              padding: '14px 16px',
+              marginBottom: '20px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px',
+                marginBottom: '10px',
+              }}
+            >
+              {/* Icon & Milestone Text */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                <div
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '8px',
+                    background: 'rgba(37, 211, 102, 0.15)',
+                    border: '1px solid rgba(37, 211, 102, 0.3)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#25D366" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <circle cx="12" cy="12" r="6" />
+                    <circle cx="12" cy="12" r="2" />
+                  </svg>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <span
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      color: 'var(--text-primary)',
+                      letterSpacing: '-0.01em',
+                      display: 'block',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                  >
+                    Next Milestone:{' '}
+                    <span style={{ color: 'var(--green-light)', fontWeight: '800' }}>
+                      {milestone.formattedTarget}
+                    </span>
+                  </span>
+                </div>
+              </div>
+
+              {/* Followers needed badge */}
+              <div
+                style={{
+                  padding: '3px 10px',
+                  background: 'rgba(37, 211, 102, 0.12)',
+                  border: '1px solid rgba(37, 211, 102, 0.3)',
+                  borderRadius: '999px',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  color: 'var(--green)',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                {milestone.formattedNeeded} needed
+              </div>
+            </div>
+
+            {/* Progress Bar Container */}
+            <div style={{ width: '100%', position: 'relative' }}>
+              <div
+                style={{
+                  width: '100%',
+                  height: '7px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  borderRadius: '999px',
+                  overflow: 'hidden',
+                  position: 'relative',
+                }}
+              >
+                <div
+                  style={{
+                    width: `${milestone.progressPercent}%`,
+                    height: '100%',
+                    background: 'linear-gradient(90deg, #128C7E 0%, #25D366 100%)',
+                    borderRadius: '999px',
+                    boxShadow: '0 0 8px rgba(37, 211, 102, 0.5)',
+                    transition: 'width 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginTop: '6px',
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                <span>Progress to milestone</span>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: '700' }}>
+                  {milestone.progressPercent.toFixed(1)}%
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Bottom Container Bar: LIVE Status, Real-Life Time Display, Share & Settings */}
       <div
