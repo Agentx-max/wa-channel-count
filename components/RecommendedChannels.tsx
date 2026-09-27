@@ -60,10 +60,10 @@ const RAW_CHANNELS: ChannelEntry[] = [
     avatarColor: 'linear-gradient(135deg, #f12711 0%, #f5af19 100%)',
   },
   {
-    name: 'Sinhala Subtitles.lk 🇱🇰',
-    url: 'https://whatsapp.com/channel/0029Va94Yp07IUYSfK3G7t1m',
-    inviteCode: '0029Va94Yp07IUYSfK3G7t1m',
-    avatarColor: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+    name: 'Astronomy Lanka 🇱🇰',
+    url: 'https://whatsapp.com/channel/0029VaE3Jb7EKyZ8hCltnA3x',
+    inviteCode: '0029VaE3Jb7EKyZ8hCltnA3x',
+    avatarColor: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)',
   },
 ];
 

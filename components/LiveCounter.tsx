@@ -24,7 +24,7 @@ const DIGIT_COLORS = [
   { name: 'Sky Blue', hex: '#38BDF8' },
 ];
 
-const POLL_INTERVAL = 6000; // 6 seconds refresh rate
+const POLL_INTERVAL = 5000; // 5 seconds refresh rate
 
 export default function LiveCounter({ channel: initialChannel, channelUrl, onReset }: LiveCounterProps) {
   const [channel, setChannel] = useState<ChannelData>(initialChannel);
