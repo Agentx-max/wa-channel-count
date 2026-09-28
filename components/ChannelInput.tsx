@@ -2,18 +2,15 @@
 
 import { useState, useRef } from 'react';
 import { validateChannelUrl } from '@/lib/validation';
-import TurnstileCaptcha from '@/components/TurnstileCaptcha';
 
 interface ChannelInputProps {
-  onSubmit: (url: string, token: string) => void;
+  onSubmit: (url: string) => void;
   isLoading: boolean;
 }
 
 export default function ChannelInput({ onSubmit, isLoading }: ChannelInputProps) {
   const [url, setUrl] = useState('');
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
-  const [resetSignal, setResetSignal] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleSubmit(e: React.FormEvent) {
@@ -25,13 +22,8 @@ export default function ChannelInput({ onSubmit, isLoading }: ChannelInputProps)
       return;
     }
 
-    if (!captchaToken) {
-      setLocalError('Please complete the Cloudflare CAPTCHA verification to track.');
-      return;
-    }
-
     setLocalError(null);
-    onSubmit(url.trim(), captchaToken);
+    onSubmit(url.trim());
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -39,21 +31,9 @@ export default function ChannelInput({ onSubmit, isLoading }: ChannelInputProps)
     if (localError) setLocalError(null);
   }
 
-  function handleCaptchaVerify(token: string) {
-    setCaptchaToken(token);
-    if (localError) setLocalError(null);
-  }
-
-  function handleCaptchaExpire() {
-    setCaptchaToken(null);
-  }
-
   const SAMPLE_CHANNELS = [
     { name: 'WhatsApp Channel', url: 'https://whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M' },
   ];
-
-  const isVerified = Boolean(captchaToken);
-  const isDisabled = isLoading || !isVerified;
 
   return (
     <form onSubmit={handleSubmit} noValidate style={{ width: '100%' }}>
@@ -168,52 +148,41 @@ export default function ChannelInput({ onSubmit, isLoading }: ChannelInputProps)
           </div>
         )}
 
-        {/* Cloudflare Turnstile Captcha Section */}
-        <TurnstileCaptcha
-          onVerify={handleCaptchaVerify}
-          onExpire={handleCaptchaExpire}
-          onError={handleCaptchaExpire}
-          resetSignal={resetSignal}
-        />
-
         {/* Submit button */}
         <button
           id="check-channel-btn"
           type="submit"
-          disabled={isDisabled}
+          disabled={isLoading}
           style={{
             width: '100%',
             minHeight: '52px',
             padding: '14px 24px',
             background: isLoading
               ? 'rgba(37,211,102,0.35)'
-              : !isVerified
-              ? 'rgba(255, 255, 255, 0.07)'
               : 'linear-gradient(135deg, #25d366 0%, #128c7e 100%)',
-            border: !isVerified && !isLoading ? '1px solid rgba(255, 255, 255, 0.12)' : 'none',
+            border: 'none',
             borderRadius: '16px',
-            color: !isVerified && !isLoading ? 'var(--text-muted)' : '#ffffff',
+            color: '#ffffff',
             fontSize: '16px',
             fontWeight: '700',
             fontFamily: 'inherit',
-            cursor: isDisabled ? 'not-allowed' : 'pointer',
+            cursor: isLoading ? 'not-allowed' : 'pointer',
             transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '10px',
-            boxShadow: isLoading || !isVerified ? 'none' : '0 8px 24px var(--green-glow-strong)',
+            boxShadow: isLoading ? 'none' : '0 8px 24px var(--green-glow-strong)',
             letterSpacing: '0.01em',
-            opacity: isDisabled && !isLoading ? 0.75 : 1,
           }}
           onMouseEnter={(e) => {
-            if (!isDisabled) {
+            if (!isLoading) {
               e.currentTarget.style.transform = 'translateY(-1px)';
               e.currentTarget.style.boxShadow = '0 12px 30px rgba(37,211,102,0.45)';
             }
           }}
           onMouseLeave={(e) => {
-            if (!isDisabled) {
+            if (!isLoading) {
               e.currentTarget.style.transform = 'translateY(0)';
               e.currentTarget.style.boxShadow = '0 8px 24px var(--green-glow-strong)';
             }
@@ -233,14 +202,6 @@ export default function ChannelInput({ onSubmit, isLoading }: ChannelInputProps)
                 <path d="M21 12a9 9 0 11-6.219-8.56" />
               </svg>
               Fetching Live Data...
-            </>
-          ) : !isVerified ? (
-            <>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              Verify Captcha to Track
             </>
           ) : (
             <>
