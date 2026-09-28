@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import DevToolsProtection from '@/components/DevToolsProtection';
 import './globals.css';
 
 const inter = Inter({
@@ -28,10 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.variable}>
-      <body>
-        <DevToolsProtection />
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
