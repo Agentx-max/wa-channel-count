@@ -65,6 +65,18 @@ const RAW_CHANNELS: ChannelEntry[] = [
     inviteCode: '0029VaE3Jb7EKyZ8hCltnA3x',
     avatarColor: 'linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%)',
   },
+  {
+    name: '☕ පන්හිඳක රාවය 🪶',
+    url: 'https://whatsapp.com/channel/0029VbD2dG68PgsLfjEgnj3k',
+    inviteCode: '0029VbD2dG68PgsLfjEgnj3k',
+    avatarColor: 'linear-gradient(135deg, #845ec2 0%, #d65db1 100%)',
+  },
+  {
+    name: 'අධිමාත්රා ස්ටේටස්│🤍🫀',
+    url: 'https://whatsapp.com/channel/0029VbCAEhZ84OmFKpuj543h',
+    inviteCode: '0029VbCAEhZ84OmFKpuj543h',
+    avatarColor: 'linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%)',
+  },
 ];
 
 function formatCount(c: number | null): string {
