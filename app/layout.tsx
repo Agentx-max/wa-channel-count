@@ -13,10 +13,16 @@ export const metadata: Metadata = {
   description:
     'Track any WhatsApp Channel\'s live subscriber/follower count in real time. Paste a channel link and watch the numbers update automatically.',
   keywords: ['WhatsApp', 'channel', 'followers', 'subscriber count', 'live tracker'],
+  icons: {
+    icon: 'https://i.ibb.co/KxdvZJBw/6069a1fb-d297-4809-ac59-412685ea0c0d.jpg',
+    shortcut: 'https://i.ibb.co/KxdvZJBw/6069a1fb-d297-4809-ac59-412685ea0c0d.jpg',
+    apple: 'https://i.ibb.co/KxdvZJBw/6069a1fb-d297-4809-ac59-412685ea0c0d.jpg',
+  },
   openGraph: {
     title: 'WA Live Count',
     description: 'Track WhatsApp Channel followers in real time',
     type: 'website',
+    images: ['https://i.ibb.co/KxdvZJBw/6069a1fb-d297-4809-ac59-412685ea0c0d.jpg'],
   },
 };
 
