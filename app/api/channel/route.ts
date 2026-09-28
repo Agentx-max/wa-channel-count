@@ -78,20 +78,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
     );
   }
 
-  // ── Verify Cloudflare Turnstile token (Required except for Recommended Channels) ────
-  const isRecommended = RECOMMENDED_CODES.has(code);
-  if (!isRecommended) {
-    const token = request.nextUrl.searchParams.get('token');
-    if (!token) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Security verification required. Please complete the Cloudflare challenge.',
-          code: 'MISSING_TOKEN',
-        } as ApiResponse,
-        { status: 403 },
-      );
-    }
+  // ── Verify Cloudflare Turnstile token (If token is provided) ────────────────────
+  const token = request.nextUrl.searchParams.get('token');
+  if (token) {
     const isValidCaptcha = await verifyTurnstileToken(token, ip);
     if (!isValidCaptcha) {
       return NextResponse.json(
