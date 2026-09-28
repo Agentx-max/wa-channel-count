@@ -36,6 +36,19 @@ async function verifyTurnstileToken(token: string, remoteIp: string): Promise<bo
   }
 }
 
+const RECOMMENDED_CODES = new Set([
+  '0029VajWJmkAInPnfgGtrS2K',
+  '0029VbBvaPyB4hdP6Ut4zc15',
+  '0029VaMBo5N3wtb31nYJql3x',
+  '0029VbCYfsK5Ejxyg18ecV0o',
+  '0029Vb8l9UqHVvTfUqgBg62m',
+  '0029Vb8i0FaDeONGPnRB820m',
+  '0029VbDglEUL7UVPyJMXf82r',
+  '0029VaE3Jb7EKyZ8hCltnA3x',
+  '0029VbD2dG68PgsLfjEgnj3k',
+  '0029VbCAEhZ84OmFKpuj543h',
+]);
+
 export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   // ── Rate limiting ───────────────────────────────────────────────────────
   const ip = getClientIp(request);
@@ -47,30 +60,6 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
         code: 'RATE_LIMITED',
       } as ApiResponse,
       { status: 429 },
-    );
-  }
-
-  // ── Verify Cloudflare Turnstile token ──────────────────────────────────────
-  const token = request.nextUrl.searchParams.get('token');
-  if (!token) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Security verification required. Please complete the Cloudflare challenge.',
-        code: 'MISSING_TOKEN',
-      } as ApiResponse,
-      { status: 403 },
-    );
-  }
-  const isValidCaptcha = await verifyTurnstileToken(token, ip);
-  if (!isValidCaptcha) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Cloudflare verification failed. Please try again.',
-        code: 'INVALID_CAPTCHA',
-      } as ApiResponse,
-      { status: 403 },
     );
   }
 
@@ -87,6 +76,33 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
       } as ApiResponse,
       { status: 400 },
     );
+  }
+
+  // ── Verify Cloudflare Turnstile token (Required except for Recommended Channels) ────
+  const isRecommended = RECOMMENDED_CODES.has(code);
+  if (!isRecommended) {
+    const token = request.nextUrl.searchParams.get('token');
+    if (!token) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Security verification required. Please complete the Cloudflare challenge.',
+          code: 'MISSING_TOKEN',
+        } as ApiResponse,
+        { status: 403 },
+      );
+    }
+    const isValidCaptcha = await verifyTurnstileToken(token, ip);
+    if (!isValidCaptcha) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Cloudflare verification failed. Please try again.',
+          code: 'INVALID_CAPTCHA',
+        } as ApiResponse,
+        { status: 403 },
+      );
+    }
   }
 
   // ── Fetch newsletter metadata via Baileys ───────────────────────────────
