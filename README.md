@@ -52,7 +52,7 @@ npm run dev
 
 1. Open **`http://localhost:3000/setup`** in your browser.
 2. Click **🔢 Phone Pairing Code** (or Scan QR Code).
-3. Enter your phone number with country code (e.g. `94770153179`).
+3. Enter your phone number with country code (e.g. `9477xxxxxxx`).
 4. On your phone: Open **WhatsApp → Linked Devices → Link with phone number instead** and type the 8-digit code.
 5. The setup page will switch to **Engine Connected! ✓**.
 

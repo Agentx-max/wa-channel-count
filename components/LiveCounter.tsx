@@ -47,6 +47,46 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
   const clockRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const settingsRef = useRef<HTMLDivElement | null>(null);
 
+  // Milestone celebration state
+  const [achievedMilestone, setAchievedMilestone] = useState<string | null>(null);
+  const [isExitingMilestone, setIsExitingMilestone] = useState<boolean>(false);
+  const milestoneTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerMilestoneCelebration = (formattedTarget?: string) => {
+    if (milestoneTimerRef.current) clearTimeout(milestoneTimerRef.current);
+    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+
+    const targetText = formattedTarget || getMilestoneInfo(channel.followers).formattedTarget;
+    setAchievedMilestone(targetText);
+    setIsExitingMilestone(false);
+
+    milestoneTimerRef.current = setTimeout(() => {
+      setIsExitingMilestone(true);
+      exitTimerRef.current = setTimeout(() => {
+        setAchievedMilestone(null);
+        setIsExitingMilestone(false);
+      }, 600);
+    }, 3500);
+  };
+
+  const dismissMilestoneCelebration = () => {
+    if (milestoneTimerRef.current) clearTimeout(milestoneTimerRef.current);
+    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    setIsExitingMilestone(true);
+    exitTimerRef.current = setTimeout(() => {
+      setAchievedMilestone(null);
+      setIsExitingMilestone(false);
+    }, 500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (milestoneTimerRef.current) clearTimeout(milestoneTimerRef.current);
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    };
+  }, []);
+
   // Load saved preferences from localStorage on mount
   useEffect(() => {
     try {
@@ -176,6 +216,13 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
         if (data.success) {
           const newCount = data.channel.followers;
           if (newCount !== channel.followers) {
+            const oldMilestone = getMilestoneInfo(channel.followers);
+            const newMilestone = getMilestoneInfo(newCount);
+
+            if (newCount >= oldMilestone.target || newMilestone.target > oldMilestone.target) {
+              triggerMilestoneCelebration(oldMilestone.formattedTarget);
+            }
+
             setPrevCount(channel.followers);
             setCountChanged(true);
             setTimeout(() => setCountChanged(false), 1200);
@@ -459,21 +506,54 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
                 </div>
               </div>
 
-              {/* Followers needed badge */}
-              <div
-                style={{
-                  padding: '3px 10px',
-                  background: 'rgba(37, 211, 102, 0.12)',
-                  border: '1px solid rgba(37, 211, 102, 0.3)',
-                  borderRadius: '999px',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                  color: 'var(--green)',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                }}
-              >
-                {milestone.formattedNeeded} needed
+              {/* Right Side: Preview button + Followers needed badge */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                <button
+                  onClick={() => triggerMilestoneCelebration(milestone.formattedTarget)}
+                  title="Preview milestone celebration animation"
+                  aria-label="Preview milestone animation"
+                  style={{
+                    padding: '3px 9px',
+                    background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 87, 34, 0.15) 100%)',
+                    border: '1px solid rgba(255, 193, 7, 0.35)',
+                    borderRadius: '999px',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    color: '#FFC107',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.04)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 193, 7, 0.25) 0%, rgba(255, 87, 34, 0.25) 100%)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 87, 34, 0.15) 100%)';
+                  }}
+                >
+                  <span>🎉</span>
+                  <span className="mobile-hide">Preview</span>
+                </button>
+
+                <div
+                  style={{
+                    padding: '3px 10px',
+                    background: 'rgba(37, 211, 102, 0.12)',
+                    border: '1px solid rgba(37, 211, 102, 0.3)',
+                    borderRadius: '999px',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    color: 'var(--green)',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  {milestone.formattedNeeded} needed
+                </div>
               </div>
             </div>
 
@@ -938,6 +1018,169 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
         </div>
       </div>
 
+      {/* Milestone Achieved Party Popper Celebration Overlay */}
+      {achievedMilestone && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+            background: 'rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            animation: isExitingMilestone
+              ? 'milestoneBackdropFadeOut 0.5s ease forwards'
+              : 'milestoneBackdropFadeIn 0.4s ease forwards',
+          }}
+          onClick={dismissMilestoneCelebration}
+        >
+          <div
+            style={{
+              position: 'relative',
+              width: '100%',
+              maxWidth: '420px',
+              background: 'linear-gradient(145deg, rgba(20, 26, 38, 0.96) 0%, rgba(10, 14, 22, 0.98) 100%)',
+              border: '1px solid rgba(37, 211, 102, 0.4)',
+              borderRadius: '24px',
+              padding: '32px 24px 28px',
+              textAlign: 'center',
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.85), 0 0 50px rgba(37, 211, 102, 0.25)',
+              animation: isExitingMilestone
+                ? 'milestoneZoomOut 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+                : 'milestonePopIn 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Ambient Radial Glow */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '40%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '200px',
+                height: '200px',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(37, 211, 102, 0.35) 0%, rgba(255, 193, 7, 0.2) 45%, transparent 70%)',
+                pointerEvents: 'none',
+                animation: 'pulseGlow 2s ease-in-out infinite',
+              }}
+            />
+
+            {/* Close Button */}
+            <button
+              onClick={dismissMilestoneCelebration}
+              title="Close milestone notification"
+              aria-label="Close"
+              style={{
+                position: 'absolute',
+                top: '14px',
+                right: '14px',
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: 'var(--text-secondary)',
+                fontSize: '14px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)';
+                e.currentTarget.style.color = '#ffffff';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                e.currentTarget.style.color = 'var(--text-secondary)';
+              }}
+            >
+              ✕
+            </button>
+
+            {/* Party Popper Animated WebP Image */}
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: '16px',
+                position: 'relative',
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://raw.githubusercontent.com/Agentx-max/techkey_emoji/main/Activity/Party%20Popper.webp"
+                alt="Party Popper"
+                className="milestone-party-popper"
+                style={{
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))',
+                  animation: 'popperBounce 1.6s ease-in-out infinite alternate',
+                }}
+              />
+            </div>
+
+            {/* Header Tag */}
+            <div>
+              <span
+                style={{
+                  display: 'inline-block',
+                  padding: '4px 14px',
+                  background: 'linear-gradient(135deg, rgba(37, 211, 102, 0.2) 0%, rgba(255, 193, 7, 0.2) 100%)',
+                  border: '1px solid rgba(37, 211, 102, 0.4)',
+                  borderRadius: '999px',
+                  fontSize: '11px',
+                  fontWeight: '800',
+                  color: '#25D366',
+                  letterSpacing: '0.12em',
+                  textTransform: 'uppercase',
+                  marginBottom: '10px',
+                }}
+              >
+                🎉 MILESTONE ACHIEVED 🎉
+              </span>
+            </div>
+
+            {/* Milestone Title */}
+            <h3
+              style={{
+                margin: '4px 0 8px',
+                fontSize: 'clamp(22px, 5vw, 28px)',
+                fontWeight: '800',
+                color: '#ffffff',
+                lineHeight: '1.2',
+                letterSpacing: '-0.02em',
+              }}
+            >
+              {achievedMilestone} Followers!
+            </h3>
+
+            {/* Description */}
+            <p
+              style={{
+                margin: 0,
+                fontSize: '13.5px',
+                color: 'var(--text-secondary)',
+                lineHeight: '1.5',
+              }}
+            >
+              Congratulations! <span style={{ color: '#ffffff', fontWeight: '600' }}>{channel.name}</span> has officially reached <strong style={{ color: 'var(--green-light)' }}>{achievedMilestone}</strong> live followers!
+            </p>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes pulse {
           0%, 100% { opacity: 1; transform: scale(1); }
@@ -950,6 +1193,66 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
         @keyframes popIn {
           from { opacity: 0; transform: scale(0.92) translateY(8px); }
           to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes milestonePopIn {
+          0% {
+            opacity: 0;
+            transform: scale(0.3) translateY(20px);
+          }
+          60% {
+            opacity: 1;
+            transform: scale(1.08) translateY(-4px);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+        @keyframes milestoneZoomOut {
+          0% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+          30% {
+            opacity: 0.9;
+            transform: scale(1.06) translateY(-4px);
+          }
+          100% {
+            opacity: 0;
+            transform: scale(0.1) translateY(30px);
+          }
+        }
+        @keyframes milestoneBackdropFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes milestoneBackdropFadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
+        @keyframes popperBounce {
+          0% { transform: translateY(0) rotate(-5deg) scale(1); }
+          100% { transform: translateY(-10px) rotate(6deg) scale(1.06); }
+        }
+        @keyframes pulseGlow {
+          0%, 100% { opacity: 0.4; transform: translate(-50%, -50%) scale(1); }
+          50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.25); }
+        }
+        .milestone-party-popper {
+          width: 90px;
+          height: 90px;
+        }
+        @media (max-width: 768px) {
+          .milestone-party-popper {
+            width: 70px;
+            height: 70px;
+          }
+        }
+        @media (max-width: 480px) {
+          .milestone-party-popper {
+            width: 60px;
+            height: 60px;
+          }
         }
         /* Mobile-safe bottom bar: never wraps, shrinks time display */
         @media (max-width: 400px) {
