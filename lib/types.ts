@@ -47,6 +47,7 @@ export type ErrorCode =
   | 'WA_BAILEYS_ERROR'
   | 'NETWORK_TIMEOUT'
   | 'RATE_LIMITED'
+  | 'MISSING_TOKEN'
   | 'INVALID_CAPTCHA'
   | 'INTERNAL_ERROR';
 
