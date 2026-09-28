@@ -506,54 +506,21 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
                 </div>
               </div>
 
-              {/* Right Side: Preview button + Followers needed badge */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                <button
-                  onClick={() => triggerMilestoneCelebration(milestone.formattedTarget)}
-                  title="Preview milestone celebration animation"
-                  aria-label="Preview milestone animation"
-                  style={{
-                    padding: '3px 9px',
-                    background: 'linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 87, 34, 0.15) 100%)',
-                    border: '1px solid rgba(255, 193, 7, 0.35)',
-                    borderRadius: '999px',
-                    fontSize: '11px',
-                    fontWeight: '700',
-                    color: '#FFC107',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'scale(1.04)';
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 193, 7, 0.25) 0%, rgba(255, 87, 34, 0.25) 100%)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'scale(1)';
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 87, 34, 0.15) 100%)';
-                  }}
-                >
-                  <span>🎉</span>
-                  <span className="mobile-hide">Preview</span>
-                </button>
-
-                <div
-                  style={{
-                    padding: '3px 10px',
-                    background: 'rgba(37, 211, 102, 0.12)',
-                    border: '1px solid rgba(37, 211, 102, 0.3)',
-                    borderRadius: '999px',
-                    fontSize: '11px',
-                    fontWeight: '700',
-                    color: 'var(--green)',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0,
-                  }}
-                >
-                  {milestone.formattedNeeded} needed
-                </div>
+              {/* Followers needed badge */}
+              <div
+                style={{
+                  padding: '3px 10px',
+                  background: 'rgba(37, 211, 102, 0.12)',
+                  border: '1px solid rgba(37, 211, 102, 0.3)',
+                  borderRadius: '999px',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  color: 'var(--green)',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                {milestone.formattedNeeded} needed
               </div>
             </div>
 
