@@ -31,7 +31,7 @@ declare global {
   }
 }
 
-const DEFAULT_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '0x4AAAAAAFE7AufdjdI47RVb';
+const DEFAULT_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '0x4AAAAAAFHRAlBdWkQrYTCP';
 
 export default function TurnstileCaptcha({
   siteKey = DEFAULT_SITE_KEY,

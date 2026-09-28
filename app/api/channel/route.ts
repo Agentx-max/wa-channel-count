@@ -1,5 +1,5 @@
 // =====================================================================
-// GET /api/channel?url=https://whatsapp.com/channel/...
+// GET /api/channel?url=https://whatsapp.com/channel/...&token=...
 // Returns ChannelData or ApiError (JSON)
 // =====================================================================
 
@@ -15,6 +15,27 @@ import type { ApiResponse } from '@/lib/types';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+async function verifyTurnstileToken(token: string, remoteIp: string): Promise<boolean> {
+  const secretKey = process.env.TURNSTILE_SECRET_KEY || '0x4AAAAAAFHRAmnxKP5hd8i_Cu15oXqEBlk';
+  try {
+    const formData = new URLSearchParams();
+    formData.append('secret', secretKey);
+    formData.append('response', token);
+    formData.append('remoteip', remoteIp);
+
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData,
+    });
+    const data = await res.json();
+    return Boolean(data.success);
+  } catch (err) {
+    console.error('[Turnstile Server] Verification error:', err);
+    return true; // Fallback: allow request if Cloudflare itself is unreachable
+  }
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   // ── Rate limiting ───────────────────────────────────────────────────────
   const ip = getClientIp(request);
@@ -26,6 +47,30 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
         code: 'RATE_LIMITED',
       } as ApiResponse,
       { status: 429 },
+    );
+  }
+
+  // ── Verify Cloudflare Turnstile token ──────────────────────────────────────
+  const token = request.nextUrl.searchParams.get('token');
+  if (!token) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Security verification required. Please complete the Cloudflare challenge.',
+        code: 'MISSING_TOKEN',
+      } as ApiResponse,
+      { status: 403 },
+    );
+  }
+  const isValidCaptcha = await verifyTurnstileToken(token, ip);
+  if (!isValidCaptcha) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Cloudflare verification failed. Please try again.',
+        code: 'INVALID_CAPTCHA',
+      } as ApiResponse,
+      { status: 403 },
     );
   }
 
