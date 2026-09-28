@@ -343,7 +343,7 @@ export function getConnectionStatus() {
 // In-memory short cache to eliminate latency and protect WA account on rapid live polling
 const newsletterCache = new Map<string, { data: NewsletterMetadata; timestamp: number }>();
 const newsletterInflight = new Map<string, Promise<NewsletterMetadata>>();
-const CACHE_TTL_MS = 10000; // 10 seconds cache
+const CACHE_TTL_MS = 3000; // 3 seconds cache (ensures 5s polling gets fresh live counts)
 
 /**
  * Resolve a newsletter invite code to metadata.

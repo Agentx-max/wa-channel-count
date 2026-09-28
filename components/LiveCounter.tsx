@@ -202,7 +202,12 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
     };
   }, [settingsOpen]);
 
-  // Periodic polling for live subscriber updates at 6 seconds
+  const followersRef = useRef(channel.followers);
+  useEffect(() => {
+    followersRef.current = channel.followers;
+  }, [channel.followers]);
+
+  // Periodic polling for live subscriber updates every 5 seconds
   useEffect(() => {
     async function refresh() {
       setRefreshing(true);
@@ -213,17 +218,19 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
         );
         const data = await res.json();
 
-        if (data.success) {
+        if (data.success && data.channel) {
           const newCount = data.channel.followers;
-          if (newCount !== channel.followers) {
-            const oldMilestone = getMilestoneInfo(channel.followers);
+          const currentFollowers = followersRef.current;
+
+          if (newCount !== currentFollowers) {
+            const oldMilestone = getMilestoneInfo(currentFollowers);
             const newMilestone = getMilestoneInfo(newCount);
 
             if (newCount >= oldMilestone.target || newMilestone.target > oldMilestone.target) {
               triggerMilestoneCelebration(oldMilestone.formattedTarget);
             }
 
-            setPrevCount(channel.followers);
+            setPrevCount(currentFollowers);
             setCountChanged(true);
             setTimeout(() => setCountChanged(false), 1200);
           }
@@ -245,8 +252,7 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [channelUrl, channel.followers]);
+  }, [channelUrl]);
 
   // Clock tracking
   useEffect(() => {
