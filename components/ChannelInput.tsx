@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { validateChannelUrl } from '@/lib/validation';
+import TurnstileCaptcha from '@/components/TurnstileCaptcha';
 
 interface ChannelInputProps {
   onSubmit: (url: string, token: string) => void;
@@ -10,7 +11,9 @@ interface ChannelInputProps {
 
 export default function ChannelInput({ onSubmit, isLoading }: ChannelInputProps) {
   const [url, setUrl] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [resetSignal, setResetSignal] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleSubmit(e: React.FormEvent) {
@@ -22,9 +25,13 @@ export default function ChannelInput({ onSubmit, isLoading }: ChannelInputProps)
       return;
     }
 
+    if (!captchaToken) {
+      setLocalError('Please complete the Cloudflare verification to track.');
+      return;
+    }
+
     setLocalError(null);
-    // Pass empty string as token; server accepts tokenless requests for polling
-    onSubmit(url.trim(), '');
+    onSubmit(url.trim(), captchaToken);
   }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -32,11 +39,21 @@ export default function ChannelInput({ onSubmit, isLoading }: ChannelInputProps)
     if (localError) setLocalError(null);
   }
 
+  function handleCaptchaVerify(token: string) {
+    setCaptchaToken(token);
+    if (localError) setLocalError(null);
+  }
+
+  function handleCaptchaExpire() {
+    setCaptchaToken(null);
+  }
+
   const SAMPLE_CHANNELS = [
     { name: 'WhatsApp Channel', url: 'https://whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M' },
   ];
 
-  const isDisabled = isLoading;
+  const isVerified = Boolean(captchaToken);
+  const isDisabled = isLoading || !isVerified;
 
   return (
     <form onSubmit={handleSubmit} noValidate style={{ width: '100%' }}>
@@ -151,6 +168,13 @@ export default function ChannelInput({ onSubmit, isLoading }: ChannelInputProps)
           </div>
         )}
 
+        {/* Cloudflare Turnstile Widget */}
+        <TurnstileCaptcha
+          onVerify={handleCaptchaVerify}
+          onExpire={handleCaptchaExpire}
+          onError={handleCaptchaExpire}
+          resetSignal={resetSignal}
+        />
 
         {/* Submit button */}
         <button
@@ -163,10 +187,12 @@ export default function ChannelInput({ onSubmit, isLoading }: ChannelInputProps)
             padding: '14px 24px',
             background: isLoading
               ? 'rgba(37,211,102,0.35)'
+              : !isVerified
+              ? 'rgba(255, 255, 255, 0.07)'
               : 'linear-gradient(135deg, #25d366 0%, #128c7e 100%)',
-            border: 'none',
+            border: !isVerified && !isLoading ? '1px solid rgba(255, 255, 255, 0.12)' : 'none',
             borderRadius: '16px',
-            color: '#ffffff',
+            color: !isVerified && !isLoading ? 'var(--text-muted)' : '#ffffff',
             fontSize: '16px',
             fontWeight: '700',
             fontFamily: 'inherit',
@@ -176,7 +202,7 @@ export default function ChannelInput({ onSubmit, isLoading }: ChannelInputProps)
             alignItems: 'center',
             justifyContent: 'center',
             gap: '10px',
-            boxShadow: isLoading ? 'none' : '0 8px 24px var(--green-glow-strong)',
+            boxShadow: isLoading || !isVerified ? 'none' : '0 8px 24px var(--green-glow-strong)',
             letterSpacing: '0.01em',
             opacity: isDisabled && !isLoading ? 0.75 : 1,
           }}
@@ -207,6 +233,14 @@ export default function ChannelInput({ onSubmit, isLoading }: ChannelInputProps)
                 <path d="M21 12a9 9 0 11-6.219-8.56" />
               </svg>
               Fetching Live Data...
+            </>
+          ) : !isVerified ? (
+            <>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              Complete Verification to Track
             </>
           ) : (
             <>
