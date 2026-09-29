@@ -51,13 +51,13 @@ export default function ChannelCard({ initialUrl }: ChannelCardProps) {
     }
   }
 
-  async function handleSubmit(url: string) {
+  async function handleSubmit(url: string, token: string) {
     setIsLoading(true);
     setApiError(null);
 
     try {
       const res = await fetch(
-        `/api/channel?url=${encodeURIComponent(url)}`,
+        `/api/channel?url=${encodeURIComponent(url)}&token=${encodeURIComponent(token)}`,
         { cache: 'no-store' }
       );
       const data: ApiResponse = await res.json();
