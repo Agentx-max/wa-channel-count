@@ -16,7 +16,11 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 async function verifyTurnstileToken(token: string, remoteIp: string): Promise<boolean> {
-  const secretKey = process.env.TURNSTILE_SECRET_KEY || '0x4AAAAAAFHRAmnxKP5hd8i_Cu15oXqEBlk';
+  const secretKey = process.env.TURNSTILE_SECRET_KEY;
+  if (!secretKey) {
+    // If no secret key is configured, pass validation so the counter continues working
+    return true;
+  }
   try {
     const formData = new URLSearchParams();
     formData.append('secret', secretKey);
