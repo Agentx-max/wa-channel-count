@@ -12,6 +12,11 @@
   --green-light: #34eb78;
   --green-glow: rgba(37, 211, 102, 0.18);
   --green-glow-strong: rgba(37, 211, 102, 0.35);
+  --red: #ff0033;
+  --red-dark: #b30000;
+  --red-light: #ff4d6d;
+  --red-glow: rgba(255, 0, 51, 0.18);
+  --red-glow-strong: rgba(255, 0, 51, 0.38);
   --text-primary: #ffffff;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;

@@ -7,6 +7,7 @@ interface OdometerCounterProps {
   fontSize?: string;
   duration?: number; // Animation duration in ms
   digitColor?: string;
+  glowColor?: string;
 }
 
 const DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -71,6 +72,7 @@ export default function OdometerCounter({
   fontSize = '72px',
   duration = 1500,
   digitColor = '#ffffff',
+  glowColor = 'rgba(37, 211, 102, 0.35)',
 }: OdometerCounterProps) {
   const [displayValue, setDisplayValue] = useState<number>(value);
   const animRef = useRef<number | null>(null);
@@ -129,7 +131,7 @@ export default function OdometerCounter({
   const dropShadowFilter =
     digitColor && digitColor !== '#ffffff'
       ? `drop-shadow(0 0 16px ${digitColor}80)`
-      : 'drop-shadow(0 0 16px rgba(37, 211, 102, 0.35))';
+      : `drop-shadow(0 0 16px ${glowColor})`;
 
   return (
     <div

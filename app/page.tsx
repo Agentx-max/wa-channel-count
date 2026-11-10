@@ -1,5 +1,6 @@
 import ChannelCard from '@/components/ChannelCard';
 import RecommendedChannels from '@/components/RecommendedChannels';
+import UpdatesBell from '@/components/UpdatesBell';
 
 interface HomeProps {
   searchParams: Promise<{ url?: string }>;
@@ -23,6 +24,8 @@ export default async function Home({ searchParams }: HomeProps) {
         overflow: 'hidden',
       }}
     >
+      {/* Top-corner Updates & Features Bell */}
+      <UpdatesBell theme="green" />
       {/* Ambient Animated Glowing Aura Orb */}
       <div
         aria-hidden="true"
