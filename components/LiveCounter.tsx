@@ -506,7 +506,8 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
                   >
                     Next Milestone:{' '}
                     <span style={{ color: 'var(--green-light)', fontWeight: '800' }}>
-                      {milestone.formattedTarget}
+                      <span className="milestone-full">{milestone.formattedTarget}</span>
+                      <span className="milestone-short">{milestone.shortTarget}</span>
                     </span>
                   </span>
                 </div>
@@ -526,7 +527,8 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
                   flexShrink: 0,
                 }}
               >
-                {milestone.formattedNeeded} needed
+                <span className="milestone-full">{milestone.formattedNeeded}</span>
+                <span className="milestone-short">{milestone.shortNeeded}</span> needed
               </div>
             </div>
 

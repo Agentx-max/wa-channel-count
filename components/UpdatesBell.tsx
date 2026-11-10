@@ -1,40 +1,36 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 
 interface UpdateEntry {
   id: string;
   title: string;
-  description: string;
   date: string;
   time: string;
   badge: 'NEW' | 'FEATURE' | 'SECURITY' | 'UPDATE';
+  href?: string;
 }
 
 const WEB_UPDATES: UpdateEntry[] = [
   {
     id: 'upd-2026-11-10-yt',
-    title: 'YouTube Live Subscriber Tracker',
-    description:
-      'Added a dedicated red-themed real-time YouTube channel subscriber, view, and video counter powered by live streaming analytics.',
+    title: 'YouTube Live Subscriber Tracker (/yt)',
     date: 'Nov 10, 2026',
     time: '03:49 PM',
     badge: 'NEW',
+    href: '/yt',
   },
   {
     id: 'upd-2026-11-10-bell',
-    title: 'Live Updates & Changelog Center',
-    description:
-      'Added the top-corner notification bell so you can track every new web feature, update, and improvement with exact date and time.',
+    title: 'Live Updates Notification Bell',
     date: 'Nov 10, 2026',
     time: '03:49 PM',
     badge: 'NEW',
   },
   {
     id: 'upd-2026-10-02-seo',
-    title: 'SEO & Social Preview Upgrade',
-    description:
-      'Added dynamic sitemap.xml, robots.txt, and rich OpenGraph preview cards for wacount.com channel links.',
+    title: 'SEO Sitemap & Social Preview Cards',
     date: 'Oct 02, 2026',
     time: '06:49 PM',
     badge: 'UPDATE',
@@ -42,8 +38,6 @@ const WEB_UPDATES: UpdateEntry[] = [
   {
     id: 'upd-2026-09-29-sec',
     title: 'Active DOM Security Shield & Turnstile',
-    description:
-      'Deployed active SecurityGuard anti-injection protection and Cloudflare Turnstile verification to keep live tracking fast and safe.',
     date: 'Sep 29, 2026',
     time: '09:01 PM',
     badge: 'SECURITY',
@@ -51,8 +45,6 @@ const WEB_UPDATES: UpdateEntry[] = [
   {
     id: 'upd-2026-09-28-party',
     title: 'Milestone Celebration Animation',
-    description:
-      'Added a full-screen Party Popper celebration overlay whenever a tracked channel crosses its target follower milestone live.',
     date: 'Sep 28, 2026',
     time: '07:02 PM',
     badge: 'FEATURE',
@@ -60,8 +52,6 @@ const WEB_UPDATES: UpdateEntry[] = [
   {
     id: 'upd-2026-09-27-milestone',
     title: 'Next Milestone Progress Tracker',
-    description:
-      'Added dynamic milestone target calculation, remaining followers needed badge, and a real-time progress bar.',
     date: 'Sep 27, 2026',
     time: '11:24 PM',
     badge: 'FEATURE',
@@ -69,8 +59,6 @@ const WEB_UPDATES: UpdateEntry[] = [
   {
     id: 'upd-2026-09-27-share',
     title: 'Instant Channel Share Links & 5s Polling',
-    description:
-      'Upgraded live refresh speed to 5 seconds and added one-click shareable channel counter links.',
     date: 'Sep 27, 2026',
     time: '04:23 PM',
     badge: 'FEATURE',
@@ -78,8 +66,6 @@ const WEB_UPDATES: UpdateEntry[] = [
   {
     id: 'upd-2026-09-26-custom',
     title: '10 Digit Color Themes & Live Clock',
-    description:
-      'Added counter customization settings with 10 neon odometer digit color palettes and a real-time ticking clock toggle.',
     date: 'Sep 26, 2026',
     time: '01:57 PM',
     badge: 'FEATURE',
@@ -87,8 +73,6 @@ const WEB_UPDATES: UpdateEntry[] = [
   {
     id: 'upd-2026-09-25-rec',
     title: 'Recommended Channels Live Leaderboard',
-    description:
-      'Launched the auto-ranking leaderboard of top channels with real-time follower counts and verified badges.',
     date: 'Sep 25, 2026',
     time: '01:14 PM',
     badge: 'FEATURE',
@@ -287,7 +271,7 @@ export default function UpdatesBell({ theme = 'green' }: UpdatesBellProps) {
             position: 'absolute',
             top: '50px',
             right: 0,
-            width: 'min(360px, calc(100vw - 36px))',
+            width: 'min(330px, calc(100vw - 36px))',
             background: 'rgba(13, 16, 24, 0.96)',
             border: '1px solid rgba(255, 255, 255, 0.12)',
             borderRadius: '20px',
@@ -301,7 +285,7 @@ export default function UpdatesBell({ theme = 'green' }: UpdatesBellProps) {
           {/* Panel Header */}
           <div
             style={{
-              padding: '14px 16px',
+              padding: '12px 15px',
               borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
               display: 'flex',
               alignItems: 'center',
@@ -309,12 +293,12 @@ export default function UpdatesBell({ theme = 'green' }: UpdatesBellProps) {
               background: 'rgba(255, 255, 255, 0.02)',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
               <div
                 style={{
-                  width: '30px',
-                  height: '30px',
-                  borderRadius: '9px',
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '8px',
                   background: `linear-gradient(135deg, ${accentColor} 0%, ${accentDark} 100%)`,
                   display: 'flex',
                   alignItems: 'center',
@@ -324,42 +308,37 @@ export default function UpdatesBell({ theme = 'green' }: UpdatesBellProps) {
                   flexShrink: 0,
                 }}
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                   <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
               </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <h3
-                    style={{
-                      margin: 0,
-                      fontSize: '14px',
-                      fontWeight: '700',
-                      color: '#ffffff',
-                      letterSpacing: '-0.01em',
-                    }}
-                  >
-                    What&apos;s New
-                  </h3>
-                  <span
-                    style={{
-                      fontSize: '9.5px',
-                      fontWeight: '800',
-                      padding: '2px 6px',
-                      borderRadius: '999px',
-                      background: accentBg,
-                      border: `1px solid ${accentBorder}`,
-                      color: accentColor,
-                      letterSpacing: '0.06em',
-                    }}
-                  >
-                    {WEB_UPDATES.length} UPDATES
-                  </span>
-                </div>
-                <p style={{ margin: '1px 0 0', fontSize: '11px', color: 'var(--text-muted)' }}>
-                  Latest features &amp; platform changelog
-                </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: '13.5px',
+                    fontWeight: '700',
+                    color: '#ffffff',
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  Updates
+                </h3>
+                <span
+                  style={{
+                    fontSize: '9.5px',
+                    fontWeight: '800',
+                    padding: '2px 6px',
+                    borderRadius: '999px',
+                    background: accentBg,
+                    border: `1px solid ${accentBorder}`,
+                    color: accentColor,
+                    letterSpacing: '0.06em',
+                  }}
+                >
+                  {WEB_UPDATES.length}
+                </span>
               </div>
             </div>
 
@@ -368,8 +347,8 @@ export default function UpdatesBell({ theme = 'green' }: UpdatesBellProps) {
               onClick={() => setIsOpen(false)}
               aria-label="Close updates panel"
               style={{
-                width: '28px',
-                height: '28px',
+                width: '26px',
+                height: '26px',
                 borderRadius: '8px',
                 background: 'rgba(255, 255, 255, 0.05)',
                 border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -394,26 +373,25 @@ export default function UpdatesBell({ theme = 'green' }: UpdatesBellProps) {
             </button>
           </div>
 
-          {/* Scrollable Updates Feed */}
+          {/* Compact Scrollable Updates Feed */}
           <div
             style={{
-              maxHeight: '390px',
+              maxHeight: '340px',
               overflowY: 'auto',
-              padding: '12px 14px',
+              padding: '10px 12px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '10px',
+              gap: '7px',
             }}
           >
             {WEB_UPDATES.map((item, idx) => {
               const badgeStyle = getBadgeStyle(item.badge);
               const isLatest = idx < 2;
-              return (
+              const cardContent = (
                 <div
-                  key={item.id}
                   style={{
-                    padding: '12px 13px',
-                    borderRadius: '14px',
+                    padding: '9px 11px',
+                    borderRadius: '12px',
                     background: isLatest
                       ? 'rgba(255, 255, 255, 0.045)'
                       : 'rgba(255, 255, 255, 0.02)',
@@ -429,18 +407,17 @@ export default function UpdatesBell({ theme = 'green' }: UpdatesBellProps) {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      gap: '8px',
-                      marginBottom: '6px',
-                      flexWrap: 'wrap',
+                      gap: '6px',
+                      marginBottom: '4px',
                     }}
                   >
                     <span
                       style={{
-                        fontSize: '9.5px',
+                        fontSize: '9px',
                         fontWeight: '800',
                         letterSpacing: '0.07em',
-                        padding: '2px 7px',
-                        borderRadius: '6px',
+                        padding: '1.5px 6px',
+                        borderRadius: '5px',
                         background: badgeStyle.bg,
                         border:
                           typeof badgeStyle.border === 'string' && badgeStyle.border.startsWith('1px')
@@ -454,7 +431,7 @@ export default function UpdatesBell({ theme = 'green' }: UpdatesBellProps) {
 
                     <span
                       style={{
-                        fontSize: '10.5px',
+                        fontSize: '10px',
                         fontWeight: '600',
                         color: 'var(--text-muted)',
                         display: 'inline-flex',
@@ -462,7 +439,7 @@ export default function UpdatesBell({ theme = 'green' }: UpdatesBellProps) {
                         gap: '4px',
                       }}
                     >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
                         <circle cx="12" cy="12" r="10" />
                         <polyline points="12 6 12 12 16 14" />
                       </svg>
@@ -471,31 +448,54 @@ export default function UpdatesBell({ theme = 'green' }: UpdatesBellProps) {
                   </div>
 
                   {/* Update Title */}
-                  <h4
+                  <div
                     style={{
-                      margin: '0 0 4px',
-                      fontSize: '13px',
-                      fontWeight: '700',
-                      color: '#ffffff',
-                      lineHeight: '1.3',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '6px',
                     }}
                   >
-                    {item.title}
-                  </h4>
-
-                  {/* Update Description */}
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: '11.5px',
-                      color: 'var(--text-secondary)',
-                      lineHeight: '1.45',
-                    }}
-                  >
-                    {item.description}
-                  </p>
+                    <span
+                      style={{
+                        fontSize: '12.5px',
+                        fontWeight: '700',
+                        color: '#ffffff',
+                        lineHeight: '1.3',
+                      }}
+                    >
+                      {item.title}
+                    </span>
+                    {item.href && (
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          color: '#ff4d6d',
+                          flexShrink: 0,
+                        }}
+                      >
+                        Open →
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
+
+              if (item.href) {
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    {cardContent}
+                  </Link>
+                );
+              }
+
+              return <div key={item.id}>{cardContent}</div>;
             })}
           </div>
         </div>
@@ -523,4 +523,3 @@ export default function UpdatesBell({ theme = 'green' }: UpdatesBellProps) {
     </div>
   );
 }
-

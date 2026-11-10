@@ -120,11 +120,34 @@ export function formatFollowerCount(count: number): string {
   return count.toLocaleString('en-US');
 }
 
+/**
+ * Format a number in compact shortform for mobile milestone displays.
+ * e.g. 100000 -> "100K", 1500000 -> "1.5M", 838696 -> "838.7K"
+ */
+export function formatShortCount(count: number): string {
+  const safe = Math.max(0, Math.floor(count));
+  if (safe >= 1_000_000_000) {
+    const val = safe / 1_000_000_000;
+    return `${Number.isInteger(val) ? val : val.toFixed(1).replace(/\.0$/, '')}B`;
+  }
+  if (safe >= 1_000_000) {
+    const val = safe / 1_000_000;
+    return `${Number.isInteger(val) ? val : val.toFixed(1).replace(/\.0$/, '')}M`;
+  }
+  if (safe >= 1_000) {
+    const val = safe / 1_000;
+    return `${Number.isInteger(val) ? val : val.toFixed(1).replace(/\.0$/, '')}K`;
+  }
+  return safe.toString();
+}
+
 export interface MilestoneInfo {
   target: number;
   needed: number;
   formattedTarget: string;
   formattedNeeded: string;
+  shortTarget: string;
+  shortNeeded: string;
   progressPercent: number;
 }
 
@@ -168,6 +191,8 @@ export function getMilestoneInfo(count: number): MilestoneInfo {
     needed,
     formattedTarget: formatFollowerCount(target),
     formattedNeeded: formatFollowerCount(needed),
+    shortTarget: formatShortCount(target),
+    shortNeeded: formatShortCount(needed),
     progressPercent,
   };
 }

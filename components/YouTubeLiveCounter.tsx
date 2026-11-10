@@ -609,7 +609,8 @@ export default function YouTubeLiveCounter({
                   >
                     Next Milestone:{' '}
                     <span style={{ color: 'var(--red-light)', fontWeight: '800' }}>
-                      {milestone.formattedTarget}
+                      <span className="milestone-full">{milestone.formattedTarget}</span>
+                      <span className="milestone-short">{milestone.shortTarget}</span>
                     </span>
                   </span>
                 </div>
@@ -629,7 +630,8 @@ export default function YouTubeLiveCounter({
                   flexShrink: 0,
                 }}
               >
-                {milestone.formattedNeeded} needed
+                <span className="milestone-full">{milestone.formattedNeeded}</span>
+                <span className="milestone-short">{milestone.shortNeeded}</span> needed
               </div>
             </div>
 

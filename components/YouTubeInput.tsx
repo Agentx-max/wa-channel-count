@@ -142,7 +142,7 @@ export default function YouTubeInput({ onSubmit, isLoading }: YouTubeInputProps)
             style={{
               position: 'absolute',
               left: '16px',
-              top: '50%',
+              top: '26px',
               transform: 'translateY(-50%)',
               color: 'var(--red)',
               display: 'flex',
@@ -203,7 +203,7 @@ export default function YouTubeInput({ onSubmit, isLoading }: YouTubeInputProps)
               style={{
                 position: 'absolute',
                 right: '14px',
-                top: '50%',
+                top: '26px',
                 transform: 'translateY(-50%)',
                 color: 'var(--red)',
                 display: 'flex',
@@ -224,22 +224,19 @@ export default function YouTubeInput({ onSubmit, isLoading }: YouTubeInputProps)
             </div>
           )}
 
-          {/* Search Suggestions Dropdown */}
+          {/* Search Suggestions List (In-flow so it expands the card cleanly and never overlaps) */}
           {showSuggestions && suggestions.length > 0 && (
             <div
               style={{
-                position: 'absolute',
-                top: 'calc(100% + 8px)',
-                left: 0,
-                right: 0,
-                background: 'rgba(13, 16, 24, 0.98)',
+                marginTop: '10px',
+                width: '100%',
+                maxHeight: '240px',
+                overflowY: 'auto',
+                background: 'rgba(10, 12, 18, 0.98)',
                 border: '1px solid rgba(255, 0, 51, 0.3)',
                 borderRadius: '16px',
                 padding: '6px',
-                boxShadow: '0 16px 40px rgba(0, 0, 0, 0.75)',
-                backdropFilter: 'blur(20px)',
-                WebkitBackdropFilter: 'blur(20px)',
-                zIndex: 40,
+                boxShadow: 'inset 0 2px 10px rgba(0, 0, 0, 0.5)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '4px',

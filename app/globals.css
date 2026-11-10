@@ -116,6 +116,22 @@ button:active {
 }
 
 /* Responsive utilities */
+.milestone-short {
+  display: none;
+}
+.milestone-full {
+  display: inline;
+}
+
+@media (max-width: 520px) {
+  .milestone-short {
+    display: inline !important;
+  }
+  .milestone-full {
+    display: none !important;
+  }
+}
+
 @media (max-width: 480px) {
   .mobile-hide {
     display: none !important;
