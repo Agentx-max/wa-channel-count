@@ -415,7 +415,7 @@ export default function YouTubeLiveCounter({
             style={{
               fontSize: '13px',
               fontWeight: '700',
-              color: channel.subscribers >= prevCount ? 'var(--red-light)' : 'var(--warning)',
+              color: channel.subscribers >= prevCount ? 'var(--green-light)' : 'var(--error)',
               marginTop: '6px',
               animation: 'fadeIn 0.3s ease',
             }}

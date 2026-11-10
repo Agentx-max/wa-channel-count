@@ -203,7 +203,7 @@ function YTChannelRow({ channel, index }: { channel: YTChannelWithData; index: n
         onClick={handleTrack}
         style={{ flex: 1, minWidth: 0, overflow: 'hidden', cursor: 'pointer' }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
           <p
             style={{
               margin: 0,
@@ -214,7 +214,6 @@ function YTChannelRow({ channel, index }: { channel: YTChannelWithData; index: n
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               lineHeight: '1.3',
-              flex: 1,
               minWidth: 0,
             }}
           >

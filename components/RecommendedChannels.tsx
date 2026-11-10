@@ -221,7 +221,7 @@ function ChannelRow({ channel, index }: { channel: ChannelWithData; index: numbe
 
       {/* Channel Info (Name + Followers) */}
       <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: 0 }}>
           <p
             style={{
               margin: 0,
@@ -232,7 +232,6 @@ function ChannelRow({ channel, index }: { channel: ChannelWithData; index: numbe
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               lineHeight: '1.3',
-              flex: 1,
               minWidth: 0,
             }}
           >
