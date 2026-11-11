@@ -1,7 +1,7 @@
-import Link from 'next/link';
 import ChannelCard from '@/components/ChannelCard';
 import RecommendedChannels from '@/components/RecommendedChannels';
 import UpdatesBell from '@/components/UpdatesBell';
+import CounterNavMenu from '@/components/CounterNavMenu';
 
 interface HomeProps {
   searchParams: Promise<{ url?: string }>;
@@ -25,7 +25,8 @@ export default async function Home({ searchParams }: HomeProps) {
         overflow: 'hidden',
       }}
     >
-      {/* Top-corner Updates & Features Bell */}
+      {/* Top-left Hamburger Menu & Top-right Updates Bell */}
+      <CounterNavMenu theme="green" />
       <UpdatesBell theme="green" />
       {/* Ambient Animated Glowing Aura Orb */}
       <div
@@ -125,50 +126,6 @@ export default async function Home({ searchParams }: HomeProps) {
             Track a WhatsApp Channel&apos;s followers{' '}
             <span style={{ color: 'var(--green)', fontWeight: '600' }}>in real time.</span>
           </p>
-
-          {/* YouTube Sub Tracker Promo / Switcher Pill */}
-          <div style={{ marginTop: '18px', display: 'flex', justifyContent: 'center' }}>
-            <Link
-              href="/yt"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '7px 14px',
-                borderRadius: '999px',
-                background:
-                  'linear-gradient(135deg, rgba(255, 0, 51, 0.14) 0%, rgba(179, 0, 0, 0.08) 100%)',
-                border: '1px solid rgba(255, 0, 51, 0.35)',
-                color: '#ffffff',
-                fontSize: '12.5px',
-                fontWeight: '600',
-                textDecoration: 'none',
-                boxShadow: '0 4px 18px rgba(255, 0, 51, 0.18)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <span
-                style={{
-                  fontSize: '9.5px',
-                  fontWeight: '800',
-                  padding: '2px 6px',
-                  borderRadius: '999px',
-                  background: 'var(--red)',
-                  color: '#ffffff',
-                  letterSpacing: '0.06em',
-                }}
-              >
-                NEW
-              </span>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="#ff0033" style={{ flexShrink: 0 }}>
-                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-              </svg>
-              <span>YouTube Live Sub Tracker</span>
-              <span style={{ color: 'var(--red-light)', fontWeight: '700' }}>→</span>
-            </Link>
-          </div>
         </header>
 
         {/* Main card */}

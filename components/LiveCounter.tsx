@@ -426,21 +426,25 @@ export default function LiveCounter({ channel: initialChannel, channelUrl, onRes
         </p>
 
         {/* Dynamic Delta Indicator */}
-        {countChanged && prevCount !== null && (
-          <p
-            style={{
-              fontSize: '13px',
-              fontWeight: '700',
-              color: channel.followers >= prevCount ? 'var(--green-light)' : 'var(--error)',
-              marginTop: '6px',
-              animation: 'fadeIn 0.3s ease',
-            }}
-          >
-            {channel.followers >= prevCount
-              ? `▲ +${formatFollowerCount(channel.followers - prevCount)}`
-              : `▼ -${formatFollowerCount(prevCount - channel.followers)}`}
-          </p>
-        )}
+        {/* Fixed-height slot so the layout never shifts when the delta appears */}
+        <div style={{ height: '20px', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {countChanged && prevCount !== null && (
+            <p
+              style={{
+                margin: 0,
+                fontSize: '13px',
+                fontWeight: '700',
+                lineHeight: '20px',
+                color: channel.followers >= prevCount ? 'var(--green-light)' : 'var(--error)',
+                animation: 'fadeIn 0.3s ease',
+              }}
+            >
+              {channel.followers >= prevCount
+                ? `▲ +${formatFollowerCount(channel.followers - prevCount)}`
+                : `▼ -${formatFollowerCount(prevCount - channel.followers)}`}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Next Milestone Card */}

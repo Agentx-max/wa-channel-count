@@ -410,21 +410,25 @@ export default function YouTubeLiveCounter({
         </p>
 
         {/* Dynamic Delta Indicator */}
-        {countChanged && prevCount !== null && (
-          <p
-            style={{
-              fontSize: '13px',
-              fontWeight: '700',
-              color: channel.subscribers >= prevCount ? 'var(--green-light)' : 'var(--error)',
-              marginTop: '6px',
-              animation: 'fadeIn 0.3s ease',
-            }}
-          >
-            {channel.subscribers >= prevCount
-              ? `▲ +${formatFollowerCount(channel.subscribers - prevCount)}`
-              : `▼ -${formatFollowerCount(prevCount - channel.subscribers)}`}
-          </p>
-        )}
+        {/* Fixed-height slot so the layout never shifts when the delta appears */}
+        <div style={{ height: '20px', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {countChanged && prevCount !== null && (
+            <p
+              style={{
+                margin: 0,
+                fontSize: '13px',
+                fontWeight: '700',
+                lineHeight: '20px',
+                color: channel.subscribers >= prevCount ? 'var(--green-light)' : 'var(--error)',
+                animation: 'fadeIn 0.3s ease',
+              }}
+            >
+              {channel.subscribers >= prevCount
+                ? `▲ +${formatFollowerCount(channel.subscribers - prevCount)}`
+                : `▼ -${formatFollowerCount(prevCount - channel.subscribers)}`}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Secondary YouTube Metrics Grid (Total Views, Videos, Public API Subs) */}

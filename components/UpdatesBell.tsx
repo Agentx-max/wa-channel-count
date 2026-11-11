@@ -8,7 +8,7 @@ interface UpdateEntry {
   title: string;
   date: string;
   time: string;
-  badge: 'NEW' | 'FEATURE' | 'SECURITY' | 'UPDATE';
+  badge: 'NEW' | 'FEATURE';
   href?: string;
 }
 
@@ -27,20 +27,6 @@ const WEB_UPDATES: UpdateEntry[] = [
     date: 'Nov 10, 2026',
     time: '03:49 PM',
     badge: 'NEW',
-  },
-  {
-    id: 'upd-2026-10-02-seo',
-    title: 'SEO Sitemap & Social Preview Cards',
-    date: 'Oct 02, 2026',
-    time: '06:49 PM',
-    badge: 'UPDATE',
-  },
-  {
-    id: 'upd-2026-09-29-sec',
-    title: 'Active DOM Security Shield & Turnstile',
-    date: 'Sep 29, 2026',
-    time: '09:01 PM',
-    badge: 'SECURITY',
   },
   {
     id: 'upd-2026-09-28-party',
@@ -152,23 +138,11 @@ export default function UpdatesBell({ theme = 'green' }: UpdatesBellProps) {
           color: accentColor,
         };
       case 'FEATURE':
+      default:
         return {
           bg: 'rgba(56, 189, 248, 0.12)',
           border: '1px solid rgba(56, 189, 248, 0.3)',
           color: '#38bdf8',
-        };
-      case 'SECURITY':
-        return {
-          bg: 'rgba(255, 183, 3, 0.12)',
-          border: '1px solid rgba(255, 183, 3, 0.3)',
-          color: '#ffb703',
-        };
-      case 'UPDATE':
-      default:
-        return {
-          bg: 'rgba(168, 85, 247, 0.12)',
-          border: '1px solid rgba(168, 85, 247, 0.3)',
-          color: '#c084fc',
         };
     }
   };
